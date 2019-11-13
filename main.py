@@ -20,13 +20,18 @@ def main():
         content = file.read() 
     
     # Lexer
+    print("Running Lexer")
     lex = Lexer(content)
     tokens = lex.tokenize()
     
     # Parser
+    print("Running parser")
     parser = Parser(tokens)
-    dep = parser.dependencies()
-    print(dep)
+    dependency = parser.get_dependency()
+    entity = parser.get_entity()
+
+    print(dependency)
+    print(entity)
 
 
 if __name__ == "__main__":
