@@ -33,8 +33,9 @@ class Lexer(object):
         tokens = []
 
         # Creating word list of source code
-        source_code = self.source_code.split()
- 
+        #source_code = self.source_code.splitlines(True)
+        source_code = re.findall(r'\S+|\n', self.source_code)
+
         # Word index counter
         source_index = 0
 
@@ -48,34 +49,42 @@ class Lexer(object):
                 word = word[:len(word)-1]
                 statement_end = True
 
-            if word.lower() in _keywords:
-                tokens.append(["KEYWORD", word])
-
-            elif word.lower() in _commons:
-                tokens.append(["COMMON_KEYWORD", word])
-
-            elif word in _assignment:
-                tokens.append(["ASSIGNMENT", word])
-
-            elif word in _operator:
-                tokens.append(["OPERATOR", word])
-
-            elif word in _symbols:
-                tokens.append(["SYMBOL", word])
-
-            elif re.match('[0-9]', word): 
-                tokens.append(["INTEGER", word])
-
-            elif re.match('[a-z]', word.lower()):
-                tokens.append(["IDENTIFIER", word])
-
+            if word[0:2] == "--":
+                while word[len(word)-1] != "\n":
+                    source_index += 1
+                    word += source_code[source_index]
+                tokens.append(["COMMENT", word])
+                
             else:
-                tokens.append(["UNKNOWN", word])
 
-            if statement_end:
-                tokens.append(["STATEMENT_END", ";"])
+                if word.lower() in _keywords:
+                    tokens.append(["KEYWORD", word])
 
-            # Increment word index counter
-            source_index += 1
+                elif word.lower() in _commons:
+                    tokens.append(["COMMON_KEYWORD", word])
+
+                elif word in _assignment:
+                    tokens.append(["ASSIGNMENT", word])
+
+                elif word in _operator:
+                    tokens.append(["OPERATOR", word])
+
+                elif word in _symbols:
+                    tokens.append(["SYMBOL", word])
+
+                elif re.match('[0-9]', word): 
+                    tokens.append(["INTEGER", word])
+
+                elif re.match('[a-z]', word.lower()):
+                    tokens.append(["IDENTIFIER", word])
+
+                else:
+                    tokens.append(["UNKNOWN", word])
+
+                if statement_end:
+                    tokens.append(["STATEMENT_END", ";"])
+
+                # Increment word index counter
+                source_index += 1
 
         return tokens
