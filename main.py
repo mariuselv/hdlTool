@@ -9,6 +9,15 @@ from finder import Finder
 from vhd import VHD
 
 
+def present(file_item, id, dependency):
+    print("\n")
+    print("File: %s" %(file_item))
+
+    if len(id) > 0:
+        print("%s: %s" %(id[0][0], id[0][1]))
+    for item in dependency:
+        print("  %s: %s" %(item[0], item[1]))
+    print("\n")
 
 
 def colonize(file_list):    
@@ -29,15 +38,15 @@ def colonize(file_list):
         # Parser
         parser = Parser(tokens)
         dependency = parser.get_dependency()
-        entity = parser.get_entity()
+        id         = parser.get_id()
 
         # Save file item
         vhd_file.set_dependency(dependency)
-        vhd_file.set_entity(entity)
+        vhd_file.set_entity(id)
 
         vhd_files.append(vhd_file)
 
-
+        present(file_item, id, dependency)
 
 
 
