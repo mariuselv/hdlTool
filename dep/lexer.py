@@ -7,7 +7,7 @@ _keywords = ["abs", "file", "access", "for", "after", "function", "alias", "all"
             "procedure", "process", "pure", "range", "record", "register", "reject", "rem", "report", "return", "rol", "ror", "select", "severity", "shared",
             "signal", "sla", "sll", "sra", "srl", "subtype", "then", "to", "transport", "type", "unaffected", "units", "until", "use", "variable", "wait",
             "when", "while", "with", "xnor", "xor", "constant", "disconnect", "mod", "downto", "nand", "else", "new", "elsif", "next", "end", "nor", 
-            "entity", "not", "exit", "null"]
+            "entity", "not", "exit", "null", "context"]
 
 _commons = ["rising_edge", "falling_edge"]
 
