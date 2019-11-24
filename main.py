@@ -9,24 +9,13 @@ from finder import Finder
 from vhd import VHD
 
 
-def present(file_item, id, dependency):
-    print("\n")
-    print("File: %s" %(file_item))
-
-    if len(id) > 0:
-        print("%s: %s" %(id[0][0], id[0][1]))
-    for item in dependency:
-        print("  %s: %s" %(item[0], item[1]))
-    print("\n")
-
-
 def colonize(file_list):    
     tokens = []
     vhd_files = []
 
     for file_item in file_list:
 
-        vhd_file = VHD(file_item)
+        vhd_object = VHD(file_item)
 
         with open(file_item, 'r') as file:
             content = file.read() 
@@ -36,18 +25,16 @@ def colonize(file_list):
         tokens = lex.tokenize()
     
         # Parser
-        parser = Parser(tokens)
-        dependency = parser.get_dependency()
-        id         = parser.get_id()
+        parser      = Parser(tokens)
+        dep_list    = parser.get_dependency()
+        vhd_type    = parser.get_type()
 
-        # Save file item
-        vhd_file.set_dependency(dependency)
-        vhd_file.set_entity(id)
+        vhd_object.add_dependency(dep_list)        
+        
+        print("OBJ: %s" %(vhd_object.get_obj_dependency()))
+        print("LIB: %s" %(vhd_object.get_lib_dependency()))
 
-        vhd_files.append(vhd_file)
-
-        present(file_item, id, dependency)
-
+        vhd_files.append(vhd_object)
 
 
 def main():
