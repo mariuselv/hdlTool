@@ -48,8 +48,11 @@ class VHD:
         return self.id
 
     def set_id(self, id):
-        if id.upper() in _id_keywords:
-            self.id = id.upper()
+        if type(id) is list:
+            if id[0][0].upper() in _id_keywords:
+                self.id = id[0][1]
+        else:
+            self.id = id
 
 
     # Dependency methods
