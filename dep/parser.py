@@ -8,8 +8,9 @@
 ========================================================
 """
 
-_dep_keywords = ["library", "use", "context", "component"]
+_dep_keywords = ["library", "use", "context", "component", "entity"]
 _id_keywords  = ["entity", "package"]
+_symbols = ["(", ")", "[", "]", ";", ",", "."]
 
 
 
@@ -31,11 +32,21 @@ class Parser():
 
                 # Check if token is a dependency keyword and save it
                 if token_word.lower() in _dep_keywords:
-                    dependency_list.append(["DEPENDENCY_" + token_word.upper(), self.tokens[token_counter+1][1]])
+                    tokens_item = self.tokens[token_counter+1][1]
+
+                    # Catch any component instantiations in architecture
+                    if "." in tokens_item:
+                        idx = tokens_item.index(".")+1
+                        tokens_item = tokens_item[idx:]
+
+                    dependency_list.append(["DEPENDENCY_" + token_word.upper(), tokens_item])
 
             token_counter += 1
 
         return dependency_list
+
+
+
 
     def get_type(self):
         type_list = []
