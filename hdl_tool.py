@@ -18,9 +18,36 @@ def is_match(item1, item2):
 
 
 def reorder_dependencies(object_list):
-    ordered_list = []
+    ordered_list = object_list.copy()
+    finished = False
 
+    # Loop until a complete run without swaps
+    while not(finished):
+        finished = True
 
+        # Get item which will be checked against dependency list
+        for item in object_list:
+            item_id = item[0].get_id()
+
+            # Get item and its dependency list
+            for seek_item in object_list:
+                seek_id      = seek_item[0].get_id()
+                seek_obj_dep = seek_item[0].get_obj_dependency()
+
+                # Same item, skip
+                if seek_id == item_id:
+                    continue
+
+                # Check for dependency and get list indexes
+                if item_id.upper() in seek_obj_dep:
+                    item_idx = ordered_list.index(item)
+                    seek_idx = ordered_list.index(seek_item)
+
+                    # Check if list order need to be swapped, and swap
+                    if seek_idx < item_idx:
+                        ordered_list[item_idx], ordered_list[seek_idx] = ordered_list[seek_idx], ordered_list[item_idx]
+                        # Order has changed, need a new loop
+                        finished = False
 
     return ordered_list
 
@@ -95,8 +122,12 @@ def colonize(file_list):
     # Check list
     organized_dependencies_list = organize_dependencies(vhd_files)
 
+    # Organize compile order
+    compile_list = reorder_dependencies(organized_dependencies_list)
 
 
+    for item in compile_list:
+        print("%s: %s" %(item[0].get_filename(), item[0].get_id()))
 
 
 def main():
