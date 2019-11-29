@@ -14,13 +14,14 @@ class VHD:
     _id_keywords  = ["entity", "package"]
 
     def __init__(self, filename):
-        self.filename = filename
-        self.path = None
-        self.id = None
+        self.filename        = filename
+        self.path            = None
+        self.id              = None
         self.dependency_list = []
-        self.library = None
-        self.obj_dependency = []
-        self.lib_dependency = []
+        self.library         = None
+        self.obj_dependency  = []
+        self.lib_dependency  = []
+            
 
     # File methods
     def set_filename(self, filename):
@@ -59,12 +60,24 @@ class VHD:
     def add_dependency(self, dep_list):
         for dep in dep_list:
             dep_item = dep[1].upper()
+
+            # Library use file
             if "DEPENDENCY_USE" in dep[0].upper():
                 dep_item = self._reduce_obj_dependency_item(dep_item)
                 self.add_obj_dependency(dep_item)
+
+            # Library
             elif "DEPENDENCY_LIBRARY" in dep[0].upper():
                 self.add_lib_dependency(dep_item)
+
+            # Context file
             elif "DEPENDENCY_CONTEXT" in dep[0].upper():
+                self.add_obj_dependency(dep_item)
+
+            # Component instantiation in architecture
+            elif "DEPENDENCY_ENTITY" in dep[0].upper():
+                # Don't add empty object and self
+                #if self.get_id() != None and dep_item != self.get_id().upper():
                 self.add_obj_dependency(dep_item)
 
     def add_lib_dependency(self, lib):
