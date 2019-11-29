@@ -44,7 +44,6 @@ class Lexer(object):
         tokens = []
 
         # Creating word list of source code
-        #source_code = self.source_code.splitlines(True)
         source_code = re.findall(r'\S+|\n', self.source_code)
 
         # Word index counter
