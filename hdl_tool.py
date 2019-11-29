@@ -113,8 +113,8 @@ def colonize(file_list):
         vhd_type    = parser.get_type()
 
         # VHD object
-        vhd_object.add_dependency(dep_list)        
         vhd_object.set_id(vhd_type)
+        vhd_object.add_dependency(dep_list)        
 
         # Add to list
         vhd_files.append(vhd_object)
@@ -125,7 +125,7 @@ def colonize(file_list):
     # Organize compile order
     compile_list = reorder_dependencies(organized_dependencies_list)
 
-
+    print("Compile order:")
     for item in compile_list:
         print("%s: %s" %(item[0].get_filename(), item[0].get_id()))
 
