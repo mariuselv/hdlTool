@@ -76,9 +76,8 @@ class VHD:
 
             # Component instantiation in architecture
             elif "DEPENDENCY_ENTITY" in dep[0].upper():
-                # Don't add empty object and self
-                #if self.get_id() != None and dep_item != self.get_id().upper():
                 self.add_obj_dependency(dep_item)
+
 
     def add_lib_dependency(self, lib):
         if not(lib.upper() in self.lib_dependency):
@@ -89,10 +88,10 @@ class VHD:
             self.obj_dependency.append(obj.upper())
 
     def _reduce_obj_dependency_item(self, object):
-        # Remove everything from final '.'
+        # Remove everything from final '.', e.g ".all"
         idx = object.rindex('.')
         return_item = object[:idx].lower()
-        # Remove everything before first '.'
+        # Remove everything before first '.', e.g. "work."
         idx = return_item.find('.')
         return_item = return_item[1 + idx:] 
         return return_item
