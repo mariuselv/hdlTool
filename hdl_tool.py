@@ -19,44 +19,43 @@ def is_match(item1, item2):
 
 def reorder_dependencies(object_list):
     ordered_list = object_list.copy()
-    finished = False
+    compare_list = object_list.copy()
 
-    # Loop until a complete run without swaps
-    while not(finished):
-        finished = True
+    # Need N-1 runs to get complete ordered list
+    for run in range(1, len(object_list)):
 
-        # Get item which will be checked against dependency list
-        for item in object_list:
-            item_id = item[0].get_id()
+        # Object which dependency list will be checked
+        for check_item in compare_list:
 
-            # Get item and its dependency list
-            for seek_item in object_list:
-                seek_id      = seek_item[0].get_id()
-                seek_obj_dep = seek_item[0].get_obj_dependency()
+            # Object which will be checked if is in dependency list
+            for dep_item in ordered_list:
 
-                # Same item, skip
-                if seek_id == item_id:
-                    continue
+                # check_item has dependency on dep_item    
+                if dep_item[0].get_id().upper() in check_item[0].get_obj_dependency():
+                
+                    # Get objcts indexes from list
+                    check_item_idx = ordered_list.index(check_item)
+                    dep_item_idx = ordered_list.index(dep_item)
 
-                # Check for dependency and get list indexes
-                if item_id.upper() in seek_obj_dep:
-                    item_idx = ordered_list.index(item)
-                    seek_idx = ordered_list.index(seek_item)
+                    # check if index of dependent object is higher and swap if so
+                    if check_item_idx < dep_item_idx:
+                        #print("Swapping:  %s   <<---->>   %s" %(check_item[0].get_id(), dep_item[0].get_id()))
+                        ordered_list[check_item_idx], ordered_list[dep_item_idx] = ordered_list[dep_item_idx], ordered_list[check_item_idx]
 
-                    # Check if list order need to be swapped, and swap
-                    if seek_idx < item_idx:
-                        ordered_list[item_idx], ordered_list[seek_idx] = ordered_list[seek_idx], ordered_list[item_idx]
-                        # Order has changed, need a new loop
-                        finished = False
+        # Update list for next run
+        compare_list = ordered_list.copy()
 
+    # Return the ordered list
     return ordered_list
 
 
 
 
-def organize_dependencies(object_list):
 
+def organize_dependencies(object_list):
     organized_dependencies_list = []
+
+    # Loop all VHD files in object_list
     for item in object_list:
         item_name    = item.get_id()
         item_file    = item.get_filename()
@@ -69,7 +68,11 @@ def organize_dependencies(object_list):
         # Skip non-defined objects (context etc)
         if item_name is None:
             continue
-        
+
+        # Loop all VHD files in object list and check if any
+        #   is present in the item_obj_dep list. If so, add
+        #   VHD object to local_dependencies list, else add it
+        #   to externatl_dependencies list.
         for seek_item in object_list:
             seek_name = seek_item.get_id()
             seek_file = seek_item.get_filename()
@@ -84,9 +87,11 @@ def organize_dependencies(object_list):
             else:
                 external_dependencies.append(seek_item)
 
+        # Add VHD object with its local_depdendencies list and external_dependencies list
         organized_dependencies_list.append([item, local_dependencies, external_dependencies])
 
-    return organized_dependencies_list
+    # Return list with all VHD objectes and their local_dependencies and external_dependencies lists
+    return organized_dependencies_list  
 
 
 
@@ -109,15 +114,21 @@ def colonize(file_list):
     
         # Parser
         parser      = Parser(tokens)
+        # Get the VHD objects dependencies
         dep_list    = parser.get_dependency()
+        # Get the type of VHD object
         vhd_type    = parser.get_type()
 
         # VHD object
+        # Set the type of VHD object
         vhd_object.set_id(vhd_type)
+        # Set the VHD object dependencies
         vhd_object.add_dependency(dep_list)        
 
-        # Add to list
+        # Add VHD object to list
         vhd_files.append(vhd_object)
+
+
 
     # Check list
     organized_dependencies_list = organize_dependencies(vhd_files)
@@ -126,8 +137,8 @@ def colonize(file_list):
     compile_list = reorder_dependencies(organized_dependencies_list)
 
     print("Compile order:")
-    for item in compile_list:
-        print("%s: %s" %(item[0].get_filename(), item[0].get_id()))
+    for idx, item in enumerate(compile_list):
+        print("[%i] %s: %s" %(idx, item[0].get_filename(), item[0].get_id()))
 
 
 def main():
