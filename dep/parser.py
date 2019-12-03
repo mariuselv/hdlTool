@@ -8,8 +8,8 @@
 ========================================================
 """
 
-_dep_keywords = ["library", "use", "context", "component", "entity"]
-_id_keywords  = ["entity", "package"]
+_dep_keywords = ["LIBRARY", "USE", "CONTEXT", "COMPONENT", "ENTITY"]
+_id_keywords  = ["ENTITY", "PACKAGE", "CONTEXT"]
 _symbols = ["(", ")", "[", "]", ";", ",", "."]
 
 
@@ -20,18 +20,21 @@ class Parser():
         self.tokens = tokens
 
     def get_dependency(self):
+        """
+        Create a dependency list from the tokens
+        """
         dependency_list = []
         token_counter = 0
         
         while token_counter < len(self.tokens)-1:
-            token_keyword   = self.tokens[token_counter][0]
-            token_word      = self.tokens[token_counter][1]
+            token_keyword   = self.tokens[token_counter][0].upper()
+            token_word      = self.tokens[token_counter][1].upper()
 
             # Find VHDL keywords
             if token_keyword == "KEYWORD":
 
                 # Check if token is a dependency keyword and save it
-                if token_word.lower() in _dep_keywords:
+                if token_word in _dep_keywords:
                     tokens_item = self.tokens[token_counter+1][1]
 
                     # Catch any component instantiations in architecture
@@ -39,7 +42,7 @@ class Parser():
                         idx = tokens_item.index(".")+1
                         tokens_item = tokens_item[idx:]
 
-                    dependency_list.append(["DEPENDENCY_" + token_word.upper(), tokens_item])
+                    dependency_list.append(["DEPENDENCY_" + token_word, tokens_item])
 
             token_counter += 1
 
@@ -47,22 +50,41 @@ class Parser():
 
 
 
-
     def get_type(self):
+        """ 
+        Get type of VHD object, e.g. context file, entity or package
+        """
         type_list = []
         token_counter = 0
-        while token_counter < len(self.tokens)-1:
+
+        while (token_counter < len(self.tokens)-1):
             token_keyword   = self.tokens[token_counter][0]
-            token_word      = self.tokens[token_counter][1]
+            token_word      = self.tokens[token_counter][1].upper()
 
             # Find VHDL keywords
-            if token_keyword == "KEYWORD":
+            if (token_keyword == "KEYWORD") and (token_word in _id_keywords):
+                
+                if token_word in _id_keywords:
 
-                # Check if token is a entity keyword and save the first found
-                if token_word.lower() in _id_keywords:
-                    type_list.append([token_word.upper(),  self.tokens[token_counter+1][1]])
-                    # Done
-                    break
+                    # ENTITY ?
+                    if token_word == "ENTITY":
+                        type_list = [[token_word,  self.tokens[token_counter+1][1]]]
+                        # Done
+                        break
+                    
+                    # PACKAGE ?
+                    elif token_word == "PACKAGE":
+                        type_list = [[token_word,  self.tokens[token_counter+1][1]]]
+                        # Done
+                        break
+                        
+                    # CONTEXT ?
+                    elif token_word == "CONTEXT":
+                        # Check is next token is "IS"
+                        if self.tokens[token_counter+2][0] == "KEYWORD":
+                            if self.tokens[token_counter+2][1].upper() == "IS":
+                                type_list = [[token_word, self.tokens[token_counter+1][1]]]
+                                break
 
             token_counter += 1
 
