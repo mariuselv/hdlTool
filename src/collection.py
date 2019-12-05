@@ -176,11 +176,11 @@ class Collection:
 
 
     def list_compile_order(self):
-        print("Required libraies:")
+        print("Required libraies (number, library):")
         for idx, item in enumerate(self.external_lib_dependenies_list):
             print("[%i] %s" %(idx, item))
 
-        print("\nCompile order:")
+        print("\nCompile order (number, filename, entity):")
         for idx, item in enumerate(self.ordered_dependency_list):
             print("[%i] %s: %s" %(idx, item[0].get_filename(), item[0].get_id()))
 
