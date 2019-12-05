@@ -4,7 +4,7 @@ from vhd import VHD
 
 
 
-class Builder:
+class Collection:
 
 
     def __init__(self):
@@ -12,7 +12,7 @@ class Builder:
         self.vhd_file_list = []
         self.organized_dependencies_list = []
         self.library = None
-
+        self.external_lib_dependenies_list = []
 
 
     def set_library(self, library):
@@ -52,9 +52,15 @@ class Builder:
 
 
     def _add_external_dependencies(self, object_list):
-        print(len(object_list[2]))
+        """
+        Creates a list of libraries that has to be compiled prior
+        to compiling the items in this collection.
+        """
         for item in object_list[1]:
-            print(item.get_id())
+            print("%s: %s" %(item.get_id(), item.get_lib_dependency()))
+            for ext_item in item.get_lib_dependency():
+                if not(ext_item.upper() in self.external_lib_dependenies_list):
+                    self.external_lib_dependenies_list.append(ext_item.upper())
 
 
     def reorder_dependencies(self, object_list):
@@ -64,7 +70,7 @@ class Builder:
         """
         self._add_external_dependencies(object_list[2])
 
-        self.ordered_list = object_list.copy()
+        self.ordered_dependency_list = object_list.copy()
         compare_list = object_list.copy()
 
         # Need N-1 runs to get complete ordered list
@@ -74,21 +80,21 @@ class Builder:
             for check_item in compare_list:
 
                 # Object which will be checked if is in dependency list
-                for dep_item in self.ordered_list:
+                for dep_item in self.ordered_dependency_list:
 
                     # check_item has dependency on dep_item    
                     if dep_item[0].get_id().upper() in check_item[0].get_obj_dependency():
                     
                         # Get objcts indexes from list
-                        check_item_idx = self.ordered_list.index(check_item)
-                        dep_item_idx = self.ordered_list.index(dep_item)
+                        check_item_idx = self.ordered_dependency_list.index(check_item)
+                        dep_item_idx = self.ordered_dependency_list.index(dep_item)
 
                         # check if index of dependent object is higher and swap if so
                         if check_item_idx < dep_item_idx:
-                            self.ordered_list[check_item_idx], self.ordered_list[dep_item_idx] = self.ordered_list[dep_item_idx], self.ordered_list[check_item_idx]
+                            self.ordered_dependency_list[check_item_idx], self.ordered_dependency_list[dep_item_idx] = self.ordered_dependency_list[dep_item_idx], self.ordered_dependency_list[check_item_idx]
 
             # Update list for next run
-            compare_list = self.ordered_list.copy()
+            compare_list = self.ordered_dependency_list.copy()
 
 
 
@@ -180,5 +186,12 @@ class Builder:
 
     def list_compile_order(self):
         print("Compile order:")
-        for idx, item in enumerate(self.ordered_list):
+        for idx, item in enumerate(self.ordered_dependency_list):
             print("[%i] %s: %s" %(idx, item[0].get_filename(), item[0].get_id()))
+
+
+    def get_external_dependenies(self):
+        return self.external_lib_dependenies_list
+
+    def get_compile_order(self):
+        return self.ordered_dependency_list
