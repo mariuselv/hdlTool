@@ -3,7 +3,7 @@ sys.path.insert(0, 'src')
 
 
 from finder import Finder
-from builder import Builder
+from collection import Collection
 
 
 
@@ -14,10 +14,11 @@ def main():
     file_list = finder.get_files()
 
 
-    builder = Builder()
-    builder.add_files(file_list)
-    builder.colonize()
-    builder.list_compile_order()
+    collection = Collection()
+    collection.set_library("tb_lib")
+    collection.add_files(file_list)
+    collection.colonize()
+    collection.list_compile_order()
 
 
 
