@@ -1,3 +1,13 @@
+"""
+========================================================
+    Filename: collection.py
+    Author: Marius Elvegård
+    Description:
+
+
+========================================================
+"""
+
 from parser import Parser
 from lexer import Lexer
 from vhd import VHD
