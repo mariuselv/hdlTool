@@ -57,7 +57,6 @@ class Collection:
         to compiling the items in this collection.
         """
         for item in object_list[1]:
-            print("%s: %s" %(item.get_id(), item.get_lib_dependency()))
             for ext_item in item.get_lib_dependency():
                 if not(ext_item.upper() in self.external_lib_dependenies_list):
                     self.external_lib_dependenies_list.append(ext_item.upper())
@@ -143,7 +142,7 @@ class Collection:
 
 
 
-    def colonize(self):    
+    def organize(self):    
         tokens = []
 
         for file_item in self.vhd_file_list:

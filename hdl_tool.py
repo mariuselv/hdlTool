@@ -17,7 +17,7 @@ def main():
     collection = Collection()
     collection.set_library("tb_lib")
     collection.add_files(file_list)
-    collection.colonize()
+    collection.organize()
     collection.list_compile_order()
 
 
