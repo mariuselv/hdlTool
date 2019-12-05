@@ -96,8 +96,6 @@ class Collection:
             compare_list = self.ordered_dependency_list.copy()
 
 
-
-
     def organize_dependencies(self, object_list):
         """
         Updates the organized_dependencies_list with all VHD objectes and 
@@ -140,8 +138,6 @@ class Collection:
             self.organized_dependencies_list.append([item, local_dependencies, external_dependencies])
 
 
-
-
     def organize(self):    
         tokens = []
 
@@ -172,7 +168,6 @@ class Collection:
             # Add VHD object to list
             self.vhd_files.append(vhd_object)
 
-
         # Check list
         self.organize_dependencies(self.vhd_files)
 
@@ -180,17 +175,27 @@ class Collection:
         self.reorder_dependencies(self.organized_dependencies_list)
 
 
-
-
-
     def list_compile_order(self):
-        print("Compile order:")
+        print("Required libraies:")
+        for idx, item in enumerate(self.external_lib_dependenies_list):
+            print("[%i] %s" %(idx, item))
+
+        print("\nCompile order:")
         for idx, item in enumerate(self.ordered_dependency_list):
             print("[%i] %s: %s" %(idx, item[0].get_filename(), item[0].get_id()))
 
 
     def get_external_dependenies(self):
+        """
+        Return a list of all external libraries required by
+        the files in this collection.
+        """
         return self.external_lib_dependenies_list
 
+
     def get_compile_order(self):
+        """
+        Returns a sorted compile order list of the files
+        in this collection.
+        """
         return self.ordered_dependency_list
