@@ -89,12 +89,16 @@ class VHD:
 
     def _reduce_obj_dependency_item(self, object):
         # Remove everything from final '.', e.g ".all"
-        idx = object.rindex('.')
-        return_item = object[:idx].lower()
-        # Remove everything before first '.', e.g. "work."
-        idx = return_item.find('.')
-        return_item = return_item[1 + idx:] 
-        return return_item
+        if '.' in object:
+            idx = object.rindex('.')
+            return_item = object[:idx].lower()
+            # Remove everything before first '.', e.g. "work."
+            idx = return_item.find('.')
+            return_item = return_item[1 + idx:] 
+            return return_item
+        else:
+            return object
+
 
     def get_obj_dependency(self):
         return self.obj_dependency
