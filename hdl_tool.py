@@ -1,3 +1,13 @@
+"""
+========================================================
+    Filename: hdl_tool.py
+    Author: Marius Elvegård
+    Description:
+
+    (c) 2019 Marius Elvegård
+========================================================
+"""
+
 import sys
 sys.path.insert(0, 'src')
 
