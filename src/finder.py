@@ -28,3 +28,6 @@ class Finder():
 
     def get_files(self):
         return self.file_list
+
+    def flush(self):
+        self.file_list = []
