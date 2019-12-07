@@ -186,16 +186,16 @@ class Collection:
 
 
     def list_compile_order(self):
-        print("Required libraries (#, library):")
+        print("%s required libraries (#, library):" %(self.get_library()))
         for idx, item in enumerate(self.external_lib_dependenies_list):
             print("[%i] %s" %(idx, item))
 
-        print("\nCompile order (#, filename, entity):")
+        print("\n%s compile order (#, filename, entity):" %(self.get_library()))
         for idx, item in enumerate(self.ordered_dependency_list):
             print("[%i] %s: %s" %(idx, item[0].get_filename(), item[0].get_id()))
 
 
-    def get_external_dependenies(self):
+    def get_external_dependency(self):
         """
         Return a list of all external libraries required by
         the files in this collection.
