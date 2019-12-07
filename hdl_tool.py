@@ -14,6 +14,7 @@ sys.path.insert(0, 'src')
 
 from finder import Finder
 from collection import Collection
+from test_suite import Test_suite
 
 
 def organize(collection_list):

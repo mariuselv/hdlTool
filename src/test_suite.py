@@ -2,12 +2,17 @@
 ========================================================
     Filename: test_suite.py
     Author: Marius Elvegård
-    Description:
+    Description: 
+      The test suit constist of a test bench, a testharness
+      and a set of design files.
+      The test suite is used for compiling and running 
+      a set of simulations/tests.
 
     (c) 2019 Marius Elvegård
 ========================================================
 """
 
+from compiler import Compiler
 
 class Test_suite:
 
@@ -16,6 +21,7 @@ class Test_suite:
         self.lib_list = []
         self.testbench = None
         self.compile_order_list = []
+        self.compiler = Compiler()
 
     def add_testbench(self, testbench):
         """
@@ -32,3 +38,9 @@ class Test_suite:
     
     def get_compile_order(self):
         return self.compile_order_list
+
+    def compile(self):
+        pass
+
+    def simulate(self):
+        pass
