@@ -34,6 +34,10 @@ def organize(collection_list):
     return return_list
 
 
+def print_delimiter():
+    for idx in range(1, 50):
+        print("-", end='')
+    print("\n")
 
 
 def main():
@@ -53,8 +57,9 @@ def main():
     collection.add_files(file_list)
     collection.organize()
     collection.list_compile_order()
-
     collection_list.append(collection)
+
+    print_delimiter()
 
     finder.flush()
     finder.add_files("test/bitvis_vip_sbi/*.vhd")
@@ -65,8 +70,9 @@ def main():
     collection.add_files(file_list)
     collection.organize()
     collection.list_compile_order()
-
     collection_list.append(collection)
+
+    print_delimiter()
 
     finder.flush()
     finder.add_files("test/bitvis_vip_scoreboard/*.vhd")
@@ -77,8 +83,9 @@ def main():
     collection.add_files(file_list)
     collection.organize()
     collection.list_compile_order()
-
     collection_list.append(collection)
+
+    print_delimiter()
 
     finder.flush()
     finder.add_files("test/uvvm_util/*.vhd")
@@ -89,8 +96,9 @@ def main():
     collection.add_files(file_list)
     collection.organize()
     collection.list_compile_order()
-
     collection_list.append(collection)
+
+    print_delimiter()
 
     finder.flush()
     finder.add_files("test/uvvm_vvc_framework/src/*.vhd")
@@ -102,8 +110,9 @@ def main():
     collection.add_files(file_list)
     collection.organize()
     collection.list_compile_order()
-
     collection_list.append(collection)
+
+    print_delimiter()
 
 
     # Organize how libs has to be compiled
