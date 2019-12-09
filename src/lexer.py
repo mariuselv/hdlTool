@@ -28,7 +28,9 @@ _assignment = ["=>", "<=", ":="]
 
 _operator = ["=/*=-+"]
 
-_symbols = ["(", ")", "[", "]", ";", ",", "."]
+_symbols = ["(", ")", "[", "]", ";", ",", ".", "\""]
+
+_new_line = ["\n"]
 
 
 
@@ -62,7 +64,7 @@ class Lexer(object):
             if word[0:2] == "--":
                 while word[len(word)-1] != "\n":
                     source_index += 1
-                    word += source_code[source_index]
+                    word += source_code[source_index]   
                 tokens.append(["COMMENT", word])
                 
             else:
@@ -88,11 +90,18 @@ class Lexer(object):
                 elif re.match('[a-z]', word.lower()):
                     tokens.append(["IDENTIFIER", word])
 
+                elif word in _comments:
+                    tokens.append(["COMMENT", word])
+
+                elif word in _new_line:
+                    tokens.append(["NEW_LINE", "\n"])
+
                 else:
                     tokens.append(["UNKNOWN", word])
 
                 if statement_end:
                     tokens.append(["STATEMENT_END", ";"])
+
 
                 # Increment word index counter
                 source_index += 1
