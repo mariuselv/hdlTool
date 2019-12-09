@@ -26,17 +26,25 @@ class Parser():
         dependency_list = []
         token_counter = 0
         is_comment = False
+        is_string  = False
         
         while token_counter < len(self.tokens)-1:
             token_keyword   = self.tokens[token_counter][0].upper()
             token_word      = self.tokens[token_counter][1].upper()
 
             # Skip any string as these can contain VHDL reserved keywords
-            if token_keyword == "\"" or token_word == "\"":
-                is_comment = not(is_comment)
+            if token_keyword == "SYMBOL" and token_word == "\"":
+                is_string = not(is_string)
+
+            # Skip any comments as these can contain VHDL reserved keywords
+            if token_keyword == "COMMENT" and token_word[0:2] == "--":
+                is_comment = True
+            if token_keyword == "NEW_LINE" and is_comment:
+                is_comment = False              
+
 
             # Find VHDL keywords
-            if token_keyword == "KEYWORD" and not(is_comment):
+            if token_keyword == "KEYWORD" and not(is_string) and not(is_comment):
 
                 # Check if token is a dependency keyword and save it
                 if token_word in _dep_keywords:
