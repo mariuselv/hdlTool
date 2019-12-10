@@ -11,6 +11,7 @@
 from parser import Parser
 from lexer import Lexer
 from vhd import VHD
+from finder import Finder
 
 
 
@@ -23,6 +24,7 @@ class Collection:
         self.organized_dependencies_list = []
         self.library = None
         self.external_lib_dependenies_list = []
+        self.finder = Finder()
 
 
     def set_library(self, library):
@@ -39,7 +41,10 @@ class Collection:
         """
         Adds a list of files to builder.
         """
-        for item in files:
+        self.finder.flush()
+        self.finder.add_files(files)
+
+        for item in self.finder.get_files():
             if not(item in self.vhd_file_list):
                 self.vhd_file_list.append(item)
 
@@ -188,11 +193,11 @@ class Collection:
     def list_compile_order(self):
         print("%s required libraries (#, library):" %(self.get_library()))
         for idx, item in enumerate(self.external_lib_dependenies_list):
-            print("[%i] %s" %(idx, item))
+            print("[%i] %s" %(idx+1, item))
 
         print("\n%s compile order (#, filename, entity):" %(self.get_library()))
         for idx, item in enumerate(self.ordered_dependency_list):
-            print("[%i] %s: %s" %(idx, item[0].get_filename(), item[0].get_id()))
+            print("[%i] %s: %s" %(idx+1, item[0].get_filename(), item[0].get_id()))
 
 
     def get_external_dependency(self):
