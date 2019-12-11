@@ -47,8 +47,6 @@ class Collection:
         for item in self.finder.get_files():
             if not(item in self.vhd_file_list):
                 self.vhd_file_list.append(item)
-        # Sort compile order
-        self.organize()
 
 
     def add_file(self, file):
@@ -57,9 +55,6 @@ class Collection:
         """
         if not file in self.vhd_file_list:
             self.vhd_file_list.append(file)
-
-        # Sort compile order
-        self.organize()
 
 
     def _is_match(self, item1, item2):
