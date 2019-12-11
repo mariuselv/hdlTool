@@ -10,7 +10,6 @@
 
 _dep_keywords = ["LIBRARY", "USE", "CONTEXT", "COMPONENT", "ENTITY"]
 _id_keywords  = ["ENTITY", "PACKAGE", "CONTEXT"]
-_symbols = ["(", ")", "[", "]", ";", ",", "."]
 
 
 
