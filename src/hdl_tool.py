@@ -30,7 +30,7 @@ class Hdl_tool():
         return self.collection_list
 
 
-    def organize(self):
+    def organize_collection(self):
         collection_list_copy = self.collection_list.copy()
         self.organized_list = self.collection_list.copy()
 
@@ -47,9 +47,12 @@ class Hdl_tool():
 
 
     def list_compile_order(self):
-        print("\nLibraries compile order:")
-        for item in self.organized_list:
-            print(item.get_library())        
+        print("\n================================ HDL Tool ================================")
+        for idx, item in enumerate(self.organized_list):
+            print("[%i] Lib: %s" %(idx+1, item.get_library()))
+
+
+
 
     def collection(self):
         return Collection()
