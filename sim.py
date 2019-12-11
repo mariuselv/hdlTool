@@ -17,52 +17,83 @@ def main():
 
     tool = Hdl_tool()
 
-    # Create a collection and add to list
-    collection = tool.collection()
-    collection.set_library("bitvis_vip_uart")
-    collection.add_files("test/bitvis_vip_uart/*.vhd")
-    collection.organize()
-    collection.list_compile_order()
+"""
+========================================================
+    Filename: hdl_tool.py
+    Author: Marius Elvegård
+    Description:
 
-    tool.add_collection(collection)
+    (c) 2019 Marius Elvegård
+========================================================
+"""
 
-    collection = tool.collection()
-    collection.set_library("bitvis_vip_sbi")
-    collection.add_files("test/bitvis_vip_sbi/*.vhd")
-    collection.organize()
-    collection.list_compile_order()
+import sys
+sys.path.insert(0, 'src')
 
-    tool.add_collection(collection)
+from hdl_tool import Hdl_tool as Ht
 
-    collection = tool.collection()
-    collection.set_library("bitvis_vip_scoreboard")
-    collection.add_files("test/bitvis_vip_scoreboard/*.vhd")
-    collection.organize()
-    collection.list_compile_order()
+def main():
 
-    tool.add_collection(collection)
+    ht = Ht()
 
-    collection = tool.collection()
-    collection.set_library("uvvm_util")
-    collection.add_files("test/uvvm_util/*.vhd")
-    collection.organize()
-    collection.list_compile_order()
+    # Create VIP UART collection
+    uart_col = ht.collection()
+    uart_col.set_library("bitvis_vip_uart")
+    uart_col.add_files("test/bitvis_vip_uart/*.vhd")
+    uart_col.organize_collection()
 
-    tool.add_collection(collection)
+    # Create VIP SBI collection
+    sbi_col = ht.collection()
+    sbi_col.set_library("bitvis_vip_sbi")
+    sbi_col.add_files("test/bitvis_vip_sbi/*.vhd")
+    sbi_col.organize_collection()
 
-    collection = tool.collection()
-    collection.set_library("uvvm_vvc_framework")
-    collection.add_files("test/uvvm_vvc_framework/src/*.vhd")
-    collection.add_files("test/uvvm_vvc_framework/src_target_dependent/*.vhd")
-    collection.organize()
-    collection.list_compile_order()
+    # Create VIP Scoreboard collection
+    sb_col = ht.collection()
+    sb_col.set_library("bitvis_vip_scoreboard")
+    sb_col.add_files("test/bitvis_vip_scoreboard/*.vhd")
+    sb_col.organize_collection()
 
-    tool.add_collection(collection)
+    # Create Util collection
+    util_col = ht.collection()
+    util_col.set_library("uvvm_util")
+    util_col.add_files("test/uvvm_util/*.vhd")
+    util_col.organize_collection()
+
+    # Create VVC Framework collection
+    fw_col = ht.collection()
+    fw_col.set_library("uvvm_vvc_framework")
+    fw_col.add_files("test/uvvm_vvc_framework/src/*.vhd")
+    fw_col.add_files("test/uvvm_vvc_framework/src_target_dependent/*.vhd")
+    fw_col.organize_collection()
 
 
-    tool.organize()
-    tool.list_compile_order()
+    # List compile order in each collection
+    uart_col.list_compile_order()
+    sbi_col.list_compile_order()
+    sb_col.list_compile_order()
+    util_col.list_compile_order()
+    fw_col.list_compile_order()
+
+    # Add all collections to HDL Tool
+    ht.add_collection(sb_col)
+    ht.add_collection(sbi_col)
+    ht.add_collection(fw_col)
+    ht.add_collection(util_col)
+    ht.add_collection(uart_col)
+
+    # Sort collections in required compile order
+    ht.organize_collection()
+
+    # List required library compiled order
+    ht.list_compile_order()
+
+
+
+
+
 
 
 if __name__ == "__main__":
     main()
+
