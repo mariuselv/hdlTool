@@ -29,6 +29,7 @@ _assignment = ["=>", "<=", ":="]
 _operator = ["=/*=-+"]
 
 _symbols = ["(", ")", "[", "]", ";", ",", ".", "\""]
+_string = ["\""]
 
 _new_line = ["\n"]
 
@@ -41,6 +42,15 @@ class Lexer(object):
         # File to tokenize
         self.source_code = source_code
 
+
+    def _complete_string(self, str):
+        is_complete = True
+        for c in str:
+            if c == "\"":
+                is_complete = not(is_complete)
+        return is_complete
+
+
     def tokenize(self):
         # Container
         tokens = []
@@ -50,6 +60,9 @@ class Lexer(object):
 
         # Word index counter
         source_index = 0
+
+        # Set to True when parsing inside a string
+        in_string = False
 
         # Loop words in source code and generate tokens
         while source_index < len(source_code):
@@ -61,14 +74,35 @@ class Lexer(object):
                 word = word[:len(word)-1]
                 statement_end = True
 
+            # Detect if this is a code comment
             if word[0:2] == "--":
                 while word[len(word)-1] != "\n":
                     source_index += 1
                     word += source_code[source_index]   
                 tokens.append(["COMMENT", word])
-                
-            else:
 
+            # Detect if this is a string
+            elif "\"" in word:
+                source_index += 1
+
+                # Complete string
+                if word.count("\"") == 2:
+                    tokens.append(["STRING", word])
+                    continue    
+                # Incomplete string
+                else:
+                    text_string = word
+                    # Keep on reading until string is complete
+                    for idx in range(source_index, len(source_code)-1):
+                        text_string += source_code[idx]
+                        if "\"" in source_code[idx]:
+                            source_index = idx + 1
+                            tokens.append(["STRING", text_string])
+                            continue
+    
+
+
+            else:
                 if word.lower() in _keywords:
                     tokens.append(["KEYWORD", word])
 
