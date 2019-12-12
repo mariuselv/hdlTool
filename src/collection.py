@@ -8,7 +8,7 @@
 ========================================================
 """
 
-from parser import Parser
+from pars import Parser
 from lexer import Lexer
 from vhd import VHD
 from finder import Finder
