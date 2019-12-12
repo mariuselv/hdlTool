@@ -9,9 +9,11 @@
 """
 
 import sys
+
 from finder import Finder
 from collection import Collection
 from test_suite import Test_suite
+from compiler import Compiler
 
 
 class Hdl_tool():
@@ -19,6 +21,7 @@ class Hdl_tool():
     def __init__(self):
         self.collection_list = []
         self.organized_list  = []
+        self.compiler = Compiler()
 
 
     def add_collection(self, collection):
@@ -27,7 +30,10 @@ class Hdl_tool():
 
 
     def get_collections(self):
-        return self.collection_list
+        if self.organize_collection:
+            return self.organize_collection
+        else:
+            return self.collection_list
 
 
     def organize_collection(self):
@@ -52,7 +58,20 @@ class Hdl_tool():
             print("[%i] Lib: %s" %(idx+1, item.get_library()))
 
 
-
-
     def collection(self):
         return Collection()
+
+
+    def compile_collection(self):
+        if self.organize_collection:
+            print(self.organize_collection)
+            #for item in self.organize_collection:
+             #   print(item)
+        else:
+            if not(self.collection):
+                print("Collection missing")
+            elif not(self.organize_collection):
+                print("Run organize_collection() first")
+
+    def compile(self):
+        self.compile_collection()
