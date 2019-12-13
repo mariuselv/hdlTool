@@ -8,7 +8,7 @@
 ========================================================
 """
 
-import sys
+import sys, inspect, os
 
 from finder import Finder
 from collection import Collection
@@ -21,7 +21,14 @@ class Hdl_tool():
     def __init__(self):
         self.collection_list = []
         self.organized_list  = []
-        self.compiler = Compiler()
+        self.project_path = self._get_caller_filepath()
+
+        self.compiler = Compiler(self.project_path)
+
+
+    def _get_caller_filepath(self):
+        abs_path = os.path.abspath((inspect.stack()[2])[3])
+        return os.path.dirname(abs_path)
 
 
     def add_collection(self, collection):
@@ -30,8 +37,8 @@ class Hdl_tool():
 
 
     def get_collections(self):
-        if self.organize_collection:
-            return self.organize_collection
+        if self.organized_list:
+            return self.organized_list
         else:
             return self.collection_list
 
@@ -63,15 +70,16 @@ class Hdl_tool():
 
 
     def compile_collection(self):
-        if self.organize_collection:
-            print(self.organize_collection)
-            #for item in self.organize_collection:
-             #   print(item)
-        else:
-            if not(self.collection):
-                print("Collection missing")
-            elif not(self.organize_collection):
-                print("Run organize_collection() first")
+
+        for collection in self.organized_list:
+            lib = collection.get_library()
+            self.compiler.set_library(lib)
+            for vhd_obj in collection.get_compile_order():
+                filename = vhd_obj[0].get_filename()
+                self.compiler.compile_file(filename)
+                print("%s: %s" %(lib, filename))
+                
+
 
     def compile(self):
         self.compile_collection()
