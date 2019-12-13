@@ -11,6 +11,7 @@
 import sys
 sys.path.insert(0, 'src')
 
+
 from hdl_tool import Hdl_tool
 
 def main():
@@ -69,11 +70,11 @@ def main():
 
 
     # List compile order in each collection
-    uart_col.list_compile_order()
-    sbi_col.list_compile_order()
-    sb_col.list_compile_order()
-    util_col.list_compile_order()
-    fw_col.list_compile_order()
+    #uart_col.list_compile_order()
+    #sbi_col.list_compile_order()
+    #sb_col.list_compile_order()
+    #util_col.list_compile_order()
+    #fw_col.list_compile_order()
 
     # Add all collections to HDL Tool
     ht.add_collection(sb_col)
@@ -89,6 +90,7 @@ def main():
     ht.list_compile_order()
 
 
+    ht.compile_collection()
 
 
 
