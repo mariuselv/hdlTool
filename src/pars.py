@@ -8,9 +8,9 @@
 ========================================================
 """
 
-_dep_keywords = ["LIBRARY", "USE", "CONTEXT", "COMPONENT"]
+_dep_keywords = ["LIBRARY", "USE", "CONTEXT", "COMPONENT", "ENTITY"]
 _id_keywords  = ["ENTITY", "PACKAGE", "CONTEXT"]
-_inlines      = ["is", "IS"]
+_inlines      = ["IS"]
 
 
 class Parser():
@@ -55,6 +55,7 @@ class Parser():
                         tokens_item = tokens_item[idx:]
 
                     dependency_list.append(["DEPENDENCY_" + token_word, tokens_item])
+                    token_counter += 1
 
                 # Catch any in-code clauses, e.g. "alias X is work.my_pkg.Y"
                 elif token_word in _inlines:
@@ -64,6 +65,7 @@ class Parser():
                         dep = next_token_word[:next_token_word.rindex(".")]
                         dep = dep[dep.rindex(".")+1:]
                         dependency_list.append(["DEPENDENCY_USE", dep])
+                        token_counter += 1
 
             token_counter += 1
 
