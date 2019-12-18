@@ -19,11 +19,9 @@ class Collection:
 
 
     def __init__(self):
-        self.vhd_files = []
-        self.vhd_file_list = []
-        self.dep_appended_list = []
+        self.vhdl_obj_list = []
+        self.vhdl_source_file_list = []
         self.library = None
-        self.external_lib_dependenies_list = []
         self.finder = Finder()
 
 
@@ -37,127 +35,69 @@ class Collection:
         return self.library
 
 
-    def add_files(self, files):
-        """
-        Adds a list of files to builder.
-        """
-        self.finder.flush()
-        self.finder.add_files(files)
-
-        for item in self.finder.get_files():
-            if not(item in self.vhd_file_list):
-                self.vhd_file_list.append(item)
-
-
-    def add_file(self, file):
+    def add_file(self, vhdl_file):
         """
         Adds a single file to builder.
         """
-        if not file in self.vhd_file_list:
-            self.vhd_file_list.append(file)
+        self.finder.add_file(vhdl_file)
+
+        if not vhdl_file in self.vhdl_source_file_list:
+            self.vhdl_source_file_list.append(vhdl_file)
 
 
-    def _is_match(self, item1, item2):
+    def add_files(self, vhdl_files):
         """
-        Internal method for comparing two strings.
+        Adds a list of files to builder.
         """
-        if item1.upper() == item2.upper():
-            return True
-        else:
-            return False
+        self.finder.add_files(vhdl_files)
+
+        for vhdl_file in self.finder.get_files():
+            self.add_file(vhdl_file)
+
+    def _remove_leftovers(self, sorted_list):
+
+        return sorted_list
+        
 
 
-    def _add_external_dependencies(self, object_list):
-        """
-        Creates a list of libraries that has to be compiled prior
-        to compiling the items in this collection.
-        """
-        for item in object_list[1]:
-            for ext_item in item.get_lib_dependency():
-                if not(ext_item.upper() in self.external_lib_dependenies_list):
-                    self.external_lib_dependenies_list.append(ext_item.upper())
+    def _swap(self, list, i, j):
+        list[i], list[j] = list[j], list[i]
+        return list
 
 
-    def _sort_by_dependency(self, object_list):
-        """
-        Sort the VHD objects in correct compile order
-        """
-        self._add_external_dependencies(object_list[2])
+    def _sort_compile_order(self, vhdl_file_list):
+        sorted_list = vhdl_file_list.copy()
 
-        self.sorted_list = object_list.copy()
-        compare_list = object_list.copy()
+        # Slow sorting method, need N-1 loops
+        for sort_loop in range(1, len(sorted_list)-1):
 
-        # Need N-1 runs to get complete ordered list
-        for run in range(1, len(object_list)):
+            # Pick item to check in dependency lists
+            for sort_item in vhdl_file_list:
+                sort_name = sort_item.get_name()
 
-            # Object which dependency list will be checked
-            for check_item in compare_list:
+                # Pick item which dependency list should be checked
+                for check_item in sorted_list:
+                    lib_dep, use_dep, context_dep = check_item.get_dependencies()
 
-                # Object which will be checked if is in dependency list
-                for dep_item in self.sorted_list:
+                    # Is sort_item in check_item's dependency list?
+                    if sort_name in use_dep:
 
-                    # check_item has dependency on dep_item    
-                    if dep_item[0].get_id().upper() in check_item[0].get_obj_dependency():
-                    
-                        # Get objcts indexes from list
-                        check_item_idx = self.sorted_list.index(check_item)
-                        dep_item_idx = self.sorted_list.index(dep_item)
+                        # Should items be swapped based on index in sorted_list?
+                        sort_idx = sorted_list.index(sort_item)
+                        check_idx = sorted_list.index(check_item)
+                        if check_idx < sort_idx:
+                            sorted_list = self._swap(sorted_list, sort_idx, check_idx)
 
-                        # check if index of dependent object is higher and swap if so
-                        if check_item_idx < dep_item_idx:
-                            self.sorted_list[check_item_idx], self.sorted_list[dep_item_idx] = self.sorted_list[dep_item_idx], self.sorted_list[check_item_idx]
-
-            # Update list for next run
-            compare_list = self.sorted_list.copy()
-
-
-    def _append_dep_to_object(self, object_list):
-        """
-        Creates list of VHD objects and their dependencies
-        """
-
-        # Loop all VHD files in object_list
-        for item in object_list:
-            item_name    = item.get_id()
-            item_file    = item.get_filename()
-            #item_lib_dep = item.get_lib_dependency()
-            item_obj_dep = item.get_obj_dependency()
-
-            local_dependencies = []
-            external_dependencies = []
-
-            # Skip non-defined objects (context etc)
-            if item_name is None:
-                continue
-
-            # Loop all VHD files in object list and check if any
-            #   is present in the item_obj_dep list. If so, add
-            #   VHD object to local_dependencies list, else add it
-            #   to externatl_dependencies list.
-            for seek_item in object_list:
-                seek_name = seek_item.get_id()
-                seek_file = seek_item.get_filename()
-
-                # Same file or undefined, skip this one
-                if self._is_match(seek_file, item_file) or (seek_name is None):
-                    continue
-
-                # Organize dependencies
-                if seek_name.upper() in item_obj_dep:
-                    local_dependencies.append(seek_item)
-                else:
-                    external_dependencies.append(seek_item)
-
-            # Add VHD object with its local_depdendencies list and external_dependencies list
-            self.dep_appended_list.append([item, local_dependencies, external_dependencies])
+        
+        self.vhdl_obj_list = self._remove_leftovers(sorted_list)
 
 
     def organize_collection(self):    
         tokens = []
 
-        for file_item in self.vhd_file_list:
+        for file_item in self.vhdl_source_file_list:
 
-            vhd_object = VHD(file_item)
+            vhdl_object = VHD(file_item)
 
             with open(file_item, 'r') as file:
                 content = file.read() 
@@ -168,50 +108,42 @@ class Collection:
 
             # Parser
             parser      = Parser(tokens)
-            # Get the VHD objects dependencies
+            # Get the vhdl objects dependencies
             dep_list    = parser.get_dependency()
-            # Get the type of VHD object
-            vhd_type    = parser.get_type()
+            # Get the type of vhdl object
+            vhdl_type    = parser.get_type()
 
-            # VHD object
-            # Set the type of VHD object
-            vhd_object.set_id(vhd_type)
-            # Set the VHD object dependencies
-            vhd_object.add_dependency(dep_list)        
+            # vhdl object
+            # Set the name of vhdl object
+            vhdl_object.set_name(vhdl_type)
+            # Set the type of vhdl object
+            vhdl_object.set_type(vhdl_type)
+            # Set the vhdl object dependencies
+            vhdl_object.add_dependency(dep_list)
 
-            # Add VHD object to list
-            self.vhd_files.append(vhd_object)
+            # Add vhdl object to list
+            self.vhdl_obj_list.append(vhdl_object)
 
-        # Append local and external dependencies to VHD object
-        self._append_dep_to_object(self.vhd_files)
-
-        # Sort VHD objects in required compile order
-        self._sort_by_dependency(self.dep_appended_list)
+        self._sort_compile_order(self.vhdl_obj_list)
 
 
-
+    def get_local_dep_list(self):
+        return self.vhdl_obj_list
 
     def list_compile_order(self):
         print("\n================================ %s ================================" %(self.get_library()))
-
-        for idx, item in enumerate(self.external_lib_dependenies_list):
-            print("[%i] Lib: %s" %(idx+1, item))
-        print("\n")
-        for idx, item in enumerate(self.sorted_list):
-            print("[%i] File: %s (%s)" %(idx+1, item[0].get_filename(), item[0].get_id()))
-
-
-    def get_external_dependency(self):
-        """
-        Return a list of all external libraries required by
-        the files in this collection.
-        """
-        return self.external_lib_dependenies_list
-
+        for idx, item in enumerate(self.vhdl_obj_list):
+            print("[%i] File: %s (%s: %s)" %(idx+1, item.get_filename(), item.get_type(), item.get_name()))
 
     def get_compile_order(self):
-        """
-        Returns a sorted compile order list of the files
-        in this collection.
-        """
-        return self.sorted_list
+        return self.vhdl_obj_list
+
+    def get_external_dependency(self):
+        ret_list = []
+        for obj in self.vhdl_obj_list:
+            libs = obj.get_lib_dep()
+            for lib in libs:
+                if not lib in ret_list:
+                    ret_list.append(lib)
+
+        return ret_list

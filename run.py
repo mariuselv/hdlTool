@@ -41,12 +41,15 @@ def main():
     uart_col = ht.collection()
     uart_col.set_library("bitvis_vip_uart")
     uart_col.add_files("test/bitvis_vip_uart/*.vhd")
+    uart_col.add_files("test/uvvm_vvc_framework/src_target_dependent/*.vhd")
     uart_col.organize_collection()
+    uart_col.list_compile_order()
 
     # Create VIP SBI collection
     sbi_col = ht.collection()
     sbi_col.set_library("bitvis_vip_sbi")
     sbi_col.add_files("test/bitvis_vip_sbi/*.vhd")
+    sbi_col.add_files("test/uvvm_vvc_framework/src_target_dependent/*.vhd")
     sbi_col.organize_collection()
 
     # Create VIP Scoreboard collection
@@ -65,8 +68,9 @@ def main():
     fw_col = ht.collection()
     fw_col.set_library("uvvm_vvc_framework")
     fw_col.add_files("test/uvvm_vvc_framework/src/*.vhd")
-    fw_col.add_files("test/uvvm_vvc_framework/src_target_dependent/*.vhd")
+    #fw_col.add_files("test/uvvm_vvc_framework/src_target_dependent/*.vhd")
     fw_col.organize_collection()
+    
 
 
     # List compile order in each collection

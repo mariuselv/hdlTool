@@ -19,7 +19,8 @@ class Finder():
         self.file_list = []
 
     def add_file(self, filename):
-        self.file_list.append(filename)
+        if not filename in self.file_list:
+            self.file_list.append(filename)
 
     def add_files(self, pattern):
         files = glob.glob(pattern)

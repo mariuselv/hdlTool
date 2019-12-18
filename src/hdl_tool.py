@@ -44,13 +44,16 @@ class Hdl_tool():
 
 
     def organize_collection(self):
+        """
+        Organize collections based on library dependencies
+        """
         collection_list_copy = self.collection_list.copy()
         self.organized_list = self.collection_list.copy()
 
         for run in range(1, len(self.collection_list)):
             for check_collection in collection_list_copy:
                 for dep_collection in self.organized_list:
-                    if dep_collection.get_library().upper() in check_collection.get_external_dependency():
+                    if dep_collection.get_library() in check_collection.get_external_dependency():
                         check_idx = self.organized_list.index(check_collection)
                         dep_idx = self.organized_list.index(dep_collection)
 
@@ -70,15 +73,16 @@ class Hdl_tool():
 
 
     def compile_collection(self):
-
+        """
+        Create the compile.do file
+        """
         for collection in self.organized_list:
             lib = collection.get_library()
             self.compiler.set_library(lib)
             for vhd_obj in collection.get_compile_order():
-                filename = vhd_obj[0].get_filename()
-                self.compiler.compile_file(filename)
-                print("%s: %s" %(lib, filename))
-                
+                filename = vhd_obj.get_filename()
+                self.compiler.compile_file(filename)               
+        self.compiler.clean_up()
 
 
     def compile(self):
