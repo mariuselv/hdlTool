@@ -77,7 +77,7 @@ architecture behave of uart_tx_vvc is
   alias vvc_status              : t_vvc_status is shared_uart_vvc_status(TX, GC_INSTANCE_IDX);
   alias transaction_info        : t_transaction_info is shared_uart_transaction_info(TX, GC_INSTANCE_IDX);
   -- DTT
-  alias dtt_transaction_info    : t_transaction_group is global_uart_transaction(TX, GC_INSTANCE_IDX);
+  alias dtt_transaction_info    : t_transaction_group is global_uart_vvc_transaction(TX, GC_INSTANCE_IDX);
   -- Activity Watchdog
   signal vvc_idx_for_activity_watchdog : integer;
 
@@ -112,9 +112,9 @@ begin
     v_msg_id_panel := vvc_config.msg_id_panel;
 
     -- Register VVC in activity watchdog register
-    vvc_idx_for_activity_watchdog <= shared_inactivity_watchdog.priv_register_vvc(name      => "UART_TX",
-                                                                                  instance  => GC_INSTANCE_IDX,
-                                                                                  channel   => GC_CHANNEL);
+    vvc_idx_for_activity_watchdog <= shared_activity_watchdog.priv_register_vvc(name      => "UART_TX",
+                                                                                instance  => GC_INSTANCE_IDX,
+                                                                                channel   => GC_CHANNEL);
 
     -- Then for every single command from the sequencer
     loop  -- basically as long as new commands are received
@@ -199,15 +199,7 @@ begin
     variable v_command_is_bfm_access                  : boolean := false;
     variable v_prev_command_was_bfm_access            : boolean := false;
     variable v_msg_id_panel                           : t_msg_id_panel;
-    variable v_normalised_data    : std_logic_vector(GC_DATA_WIDTH-1 downto 0) := (others => '0');
-
-    procedure activity_watchdog_register_vvc_state(busy : boolean) is
-    begin
-      shared_inactivity_watchdog.priv_report_vvc_activity(vvc_idx               => vvc_idx_for_activity_watchdog,
-                                                          busy                  => busy,
-                                                          last_cmd_idx_executed => last_cmd_idx_executed);
-      gen_pulse(global_trigger_testcase_inactivity_watchdog, 0 ns, "pulsing global trigger for inactivity watchdog", C_SCOPE, ID_NEVER);
-    end procedure;
+    variable v_normalised_data                        : std_logic_vector(GC_DATA_WIDTH-1 downto 0) := (others => '0');
 
   begin
 
@@ -216,10 +208,10 @@ begin
     work.td_vvc_entity_support_pkg.initialize_executor(terminate_current_cmd);
     -- Set initial value of v_msg_id_panel to msg_id_panel in config
     v_msg_id_panel := vvc_config.msg_id_panel;
-
+   
     loop
       -- Notify activity watchdog
-      activity_watchdog_register_vvc_state(global_trigger_testcase_inactivity_watchdog, false, vvc_idx_for_activity_watchdog, last_cmd_idx_executed);
+      activity_watchdog_register_vvc_state(global_trigger_activity_watchdog, false, vvc_idx_for_activity_watchdog, last_cmd_idx_executed, C_SCOPE);
 
 
       -- 1. Set defaults, fetch command and log
@@ -227,7 +219,7 @@ begin
       work.td_vvc_entity_support_pkg.fetch_command_and_prepare_executor(v_cmd, command_queue, vvc_config, vvc_status, queue_is_increasing, executor_is_busy, C_VVC_LABELS, v_msg_id_panel);
 
       -- Notify activity watchdog
-      activity_watchdog_register_vvc_state(global_trigger_testcase_inactivity_watchdog, true, vvc_idx_for_activity_watchdog, last_cmd_idx_executed);
+      activity_watchdog_register_vvc_state(global_trigger_activity_watchdog, true, vvc_idx_for_activity_watchdog, last_cmd_idx_executed, C_SCOPE);
 
 
       -- Set the transaction info for waveview
@@ -272,7 +264,7 @@ begin
             -- Randomise data if applicable
             case v_cmd.randomisation is
               when RANDOM =>
-                v_cmd.data := random(v_cmd.data'length);
+                v_cmd.data := std_logic_vector(to_unsigned(random(0, 16), v_cmd.data'length)); -- Hard coded for TB example
               when RANDOM_FAVOUR_EDGES =>
                 null; -- Not implemented yet
               when others => -- NA
