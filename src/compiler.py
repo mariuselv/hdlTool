@@ -26,55 +26,65 @@ class Compiler:
     def __init__(self, project_path = ".", simulator="modelsim"):
         self.compile_directives_vsim = "-quiet -suppress 1346,1236,1090 -2008 -work"
         self.compile_directives_vcom = "-2008 -nowarn COMP96_0564 -nowarn COMP96_0048 -dbg -work"
-        self.simulator = simulator
-        self.project_path = project_path
+        self.simulator               = "modelsim"
+        self.library                 = None
+        self.project_path            = project_path
+        self.compiler_path           = None
+        self._compile_file           = None
+        self.compile_file_created    = False
 
+    def write(self, str):
+        self._compile_file.write(str)
+
+    def _generate_compile_file(self):
+        if not(os.path.isdir("sim")):
+            os.mkdir("sim")
+        filename = "compiler.do"
+        print("Generating: %s" %(filename))
+        self._compile_file = open("./sim/" + filename, "w");
+        self.write("if {[batch_mode]} {\n")
+        self.write("  onerror {abort all; exit -f -code 1}\n")
+        self.write("} else {\n")
+        self.write("  onerror {abort all}\n")
+        self.write("}\n\n")
+        self.compile_file_created = True
+
+    def _close_compile_file(self):
+        self._compile_file.close()
+
+    def _add_library_to_compile_file(self, lib):
+        self.write("\nvlib " + lib + "\n")
+        self.write("vmap " + lib + " " + lib + "\n")
+
+    def _add_to_compile_file(self, file):
+        self.write("eval vcom " + self.get_compile_directives() + " " + self.get_library() + "  ../" + file + "\n")
 
     def _get_project_path(self):
         return self.project_path
 
-
-    def _get_compile_path(self):
-        path = (self._get_project_path() + "/sim/")
-        if self._os_is_win():
-            path = '/'.join(path.split('\\'))
-        return path
-
-
     def _os_is_win(self):
         return 'windows' in platform.system().lower()
 
-
     def _run_cmd(self, cmd, verbose = False):
-        path = self._get_compile_path()
+        print("-->> %s" %(cmd))
+
+        #env={'vlib': self.modelsim_path, 'vcom': self.modelsim_path, 'vmap': self.modelsim_path})
         if verbose:
-            subprocess.check_call(cmd, stdout=FNULL, stderr=subprocess.PIPE, shell=True)
+            run = subprocess.run(cmd, stdout=FNULL, stderr=subprocess.PIPE, shell=True, env={'PATH': os.getenv('PATH')})
         else:
-            subprocess.check_call(cmd, stderr=subprocess.PIPE, shell=True)
+            run = subprocess.run(cmd, stderr=subprocess.PIPE, shell=True, env={'PATH': os.getenv('PATH')})
 
+    def compile_file(self, file):  
+        if not(self.compile_file_created): 
+            self._generate_compile_file()
+            self._add_library_to_compile_file(self.get_library())
 
-    def _set_lib(self):
-        path = self._get_compile_path()
-        if not(os.path.isdir(path)):
-            os.mkdir(path)
-
-        if not(os.path.isdir("./sim/" + self.get_library())):
-            self._run_cmd([path + "vlib", self.get_library()])
-
-        self._run_cmd([path + "vmap", self.get_library(), "./" + self.get_library()])
-
-
-    def compile_file(self, file):
-        self._set_lib()
-        if self._os_is_win():
-            file = '/'.join(file.split('\\'))
-        self._run_cmd(["vcom", self.get_compile_directives(), self.get_library(), file])
-
+        file = '/'.join(file.split('\\'))      
+        self._add_to_compile_file(file)
 
     def compile_files(self, files):
         for file in files:
             self.compile_file(file)
-
 
     def set_simulator(self, sim):
         if (sim.lower() == "vsim") or (sim.lower() == "modelsim"):
@@ -82,12 +92,10 @@ class Compiler:
         elif (sim.lower() == "vcom") or (sim.lower() == "riviera"):
             self.simulator = "riviera"
         else:
-            self.simulator = sim
-
+            self.simulator = "modelsim"
 
     def get_simulator(self):
         return self.simulator
-
 
     def set_compile_directives(self, directives):
         if (self.simulator.lower() == "modelsim"):
@@ -95,20 +103,46 @@ class Compiler:
         else:
             self.compile_directives_vcom = directives
 
-
     def get_compile_directives(self):
         if self.simulator.lower() == "modelsim":
             return self.compile_directives_vsim
         else:
             return self.compile_directives_vcom
 
-
     def set_library(self, library):
+        if self._compile_file:
+            self._add_library_to_compile_file(library)
         self.library = library
 
-
     def get_library(self):
+        if not self.library:
+            print("WARNING! Library not set")
         return self.library
 
+    def clean_up(self):
+        self._close_compile_file()
 
 
+
+
+
+#    def _extract_simulator_path(self):
+#        """
+#        Read environment variable and try to extract simulator installation path.
+#        """
+#        if self.compiler_path != None:
+#            print("Warning! Path already set by user")
+#
+#        env_list = os.getenv('Path').replace(";", " ").split()
+#        for item in env_list:
+#            if "win32aloem" in item:
+#                self.compiler_path = item
+#        if self.compiler_path == None:
+#            print("Unable to locate compiler install path!")
+#
+#    def set_simulator_path(self, path):
+#        self.compiler_path = path
+#
+#
+#    def get_simulator_path(self):
+#        return self.compiler_path
