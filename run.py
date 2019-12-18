@@ -43,7 +43,6 @@ def main():
     uart_col.add_files("test/bitvis_vip_uart/*.vhd")
     uart_col.add_files("test/uvvm_vvc_framework/src_target_dependent/*.vhd")
     uart_col.organize_collection()
-    uart_col.list_compile_order()
 
     # Create VIP SBI collection
     sbi_col = ht.collection()
@@ -74,11 +73,11 @@ def main():
 
 
     # List compile order in each collection
-    #uart_col.list_compile_order()
-    #sbi_col.list_compile_order()
-    #sb_col.list_compile_order()
-    #util_col.list_compile_order()
-    #fw_col.list_compile_order()
+    uart_col.list_compile_order()
+    sbi_col.list_compile_order()
+    sb_col.list_compile_order()
+    util_col.list_compile_order()
+    fw_col.list_compile_order()
 
     # Add all collections to HDL Tool
     ht.add_collection(sb_col)
