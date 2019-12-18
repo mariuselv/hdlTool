@@ -40,7 +40,7 @@ class Compiler:
         if not(os.path.isdir("sim")):
             os.mkdir("sim")
         filename = "compiler.do"
-        print("Generating: %s" %(filename))
+        print("\nGenerating: sim/%s" %(filename))
         self._compile_file = open("./sim/" + filename, "w");
         self.write("if {[batch_mode]} {\n")
         self.write("  onerror {abort all; exit -f -code 1}\n")
