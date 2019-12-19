@@ -57,15 +57,21 @@ class Parser():
                     dependency_list.append(["DEPENDENCY_" + token_word, tokens_item])
                     token_counter += 1
 
-                # Catch any in-code clauses, e.g. "alias X is work.my_pkg.Y"
+                # Catch any in-code clauses, e.g. "alias X is my_library.my_pkg.Y"
                 elif token_word in _inlines:
                     next_token_keyword = self.tokens[token_counter + 1][0]
                     next_token_word    = self.tokens[token_counter + 1][1]
-                    if (next_token_word[0:5].lower() == "work.") and (next_token_keyword.upper() == "IDENTIFIER"):
-                        dep = next_token_word[:next_token_word.rindex(".")]
-                        dep = dep[dep.rindex(".")+1:]
-                        dependency_list.append(["DEPENDENCY_USE", dep])
-                        token_counter += 1
+                    if next_token_keyword.upper() == "IDENTIFIER":
+
+                        # Need to find a referenced signal/constant/type etc
+                        #   <library>.<package>.<signal/constant/type>
+                        if next_token_word.count(".") > 1:
+                            # Remove libray part (<package>.<signal/constant/type>)
+                            dep = next_token_word[next_token_word.index(".")+1:]                            
+                            # Remove everything from next "." (<package>)
+                            dep = dep[:dep.index(".")]
+                            dependency_list.append(["DEPENDENCY_USE", dep])
+                            token_counter += 1
 
             token_counter += 1
 
