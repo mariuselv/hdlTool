@@ -121,28 +121,3 @@ class Compiler:
 
     def clean_up(self):
         self._close_compile_file()
-
-
-
-
-
-#    def _extract_simulator_path(self):
-#        """
-#        Read environment variable and try to extract simulator installation path.
-#        """
-#        if self.compiler_path != None:
-#            print("Warning! Path already set by user")
-#
-#        env_list = os.getenv('Path').replace(";", " ").split()
-#        for item in env_list:
-#            if "win32aloem" in item:
-#                self.compiler_path = item
-#        if self.compiler_path == None:
-#            print("Unable to locate compiler install path!")
-#
-#    def set_simulator_path(self, path):
-#        self.compiler_path = path
-#
-#
-#    def get_simulator_path(self):
-#        return self.compiler_path
