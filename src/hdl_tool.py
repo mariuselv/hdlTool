@@ -81,7 +81,8 @@ class Hdl_tool():
             self.compiler.set_library(lib)
             for vhd_obj in collection.get_compile_order():
                 filename = vhd_obj.get_filename()
-                self.compiler.compile_file(filename)               
+                self.compiler.compile_file(filename)    
+        self.compiler.run_compilation()           
         self.compiler.clean_up()
 
 

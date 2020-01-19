@@ -13,9 +13,10 @@
 """
 
 import subprocess
-import os
+import os, sys
 import platform
 
+sys.path.insert(0, '../sim')
 
 # Disable terminal output
 FNULL = open(os.devnull, 'w')
@@ -32,6 +33,7 @@ class Compiler:
         self.compiler_path           = None
         self._compile_file           = None
         self.compile_file_created    = False
+        self.compile_file_closed     = False
 
     def write(self, str):
         self._compile_file.write(str)
@@ -48,9 +50,11 @@ class Compiler:
         self.write("  onerror {abort all}\n")
         self.write("}\n\n")
         self.compile_file_created = True
+        self.compile_file_closed = False
 
     def _close_compile_file(self):
         self._compile_file.close()
+        self.compile_file_closed = True
 
     def _add_library_to_compile_file(self, lib):
         self.write("\nvlib " + lib + "\n")
@@ -65,16 +69,21 @@ class Compiler:
     def _os_is_win(self):
         return 'windows' in platform.system().lower()
 
-    def _run_cmd(self, cmd, verbose = False):
+
+    def _run_cmd(self, cmd, verbose = False, path="."):
         print("-->> %s" %(cmd))
 
         #env={'vlib': self.modelsim_path, 'vcom': self.modelsim_path, 'vmap': self.modelsim_path})
         if verbose:
-            run = subprocess.run(cmd, stdout=FNULL, stderr=subprocess.PIPE, shell=True, env={'PATH': os.getenv('PATH')})
+            run = subprocess.run(cmd, cwd=path, stdout=FNULL, stderr=subprocess.PIPE, shell=True, env={'PATH': os.getenv('PATH')})
         else:
-            run = subprocess.run(cmd, stderr=subprocess.PIPE, shell=True, env={'PATH': os.getenv('PATH')})
+            run = subprocess.run(cmd, cwd=path, stderr=subprocess.PIPE, shell=True, env={'PATH': os.getenv('PATH')})
 
-    def compile_file(self, file):  
+
+    def compile_file(self, file):
+        """
+        Compile VHD files
+        """  
         if not(self.compile_file_created): 
             self._generate_compile_file()
             self._add_library_to_compile_file(self.get_library())
@@ -82,9 +91,28 @@ class Compiler:
         file = '/'.join(file.split('\\'))      
         self._add_to_compile_file(file)
 
-    def compile_files(self, files):
-        for file in files:
-            self.compile_file(file)
+
+    def compile_files(self, vhdl_collection):
+        """
+        Compile VHD file objects
+        """
+        for vhd_obj in vhdl_collection:
+            filename = vhd_obj.get_filename()
+            self.compile_file(filename)
+
+
+    def run_compilation(self):
+        if not(self.compile_file_closed): self._close_compile_file()
+
+        print("running compiler")
+        path = os.getcwd().replace("\\", "/") + "/sim"
+
+        self.env_var = os.environ.copy()
+        self.env_var["SIMULATOR"] = "MODELSIM"
+
+        process = subprocess.Popen(['vsim', '-c', '-do', 'do compiler.do; exit -f'], env=self.env_var, stderr=subprocess.PIPE, cwd=path)
+        process.wait()
+
 
     def set_simulator(self, sim):
         if (sim.lower() == "vsim") or (sim.lower() == "modelsim"):
@@ -120,4 +148,4 @@ class Compiler:
         return self.library
 
     def clean_up(self):
-        self._close_compile_file()
+        if not(self.compile_file_closed): self._close_compile_file()
