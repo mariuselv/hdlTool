@@ -70,7 +70,18 @@ def main():
     #fw_col.add_files("test/uvvm_vvc_framework/src_target_dependent/*.vhd")
     fw_col.organize_collection()
     
+    # Create VIP clock generator collection
+    cg_col = ht.collection()
+    cg_col.set_library("bitvis_vip_clock_generator")
+    cg_col.add_files("test/bitvis_vip_clock_generator/*.vhd")
+    cg_col.add_files("test/uvvm_vvc_framework/src_target_dependent/*.vhd")
+    cg_col.organize_collection()
 
+    # Create UART DUT collection
+    uart_dut = ht.collection()
+    uart_dut.set_library("bitvis_uart")
+    uart_dut.add_files("test/bitvis_uart/*.vhd")
+    uart_dut.organize_collection()
 
     # List compile order in each collection
     uart_col.list_compile_order()
@@ -78,6 +89,8 @@ def main():
     sb_col.list_compile_order()
     util_col.list_compile_order()
     fw_col.list_compile_order()
+    cg_col.list_compile_order()
+    uart_dut.list_compile_order()
 
     # Add all collections to HDL Tool
     ht.add_collection(sb_col)
@@ -85,6 +98,8 @@ def main():
     ht.add_collection(fw_col)
     ht.add_collection(util_col)
     ht.add_collection(uart_col)
+    ht.add_collection(cg_col)
+    ht.add_collection(uart_dut)
 
     # Sort collections in required compile order
     ht.organize_collection()
@@ -96,7 +111,18 @@ def main():
     ht.compile_collection()
 
 
-
+    # Defining testbench
+    tb = ht.add_testbench("tb/demo_tb.vhd", verbose=True)
+    tb.set_harness("tb/demo_th.vhd")
+    tb.set_library("bitvis_vip_uart")
+    tb.set_entity("demo_tb")
+    tb.add_generic("GC_TEST", "test_error_injection")
+    tb.add_generic("GC_TEST", "test_randomise")
+    tb.add_generic("GC_TEST", "test_protocol_checker")
+    tb.add_generic("GC_TEST", "test_activity_watchdog")
+    tb.add_generic("GC_TEST", "test_simple_watchdog")
+    
+    tb.run_testbench()
 
 
 if __name__ == "__main__":
