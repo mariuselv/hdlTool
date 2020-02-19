@@ -24,7 +24,7 @@ FNULL = open(os.devnull, 'w')
 
 class Compiler:
 
-    def __init__(self, project_path = ".", simulator="modelsim"):
+    def __init__(self, project_path = ".", simulator="modelsim", filename="compiler.do", testbench=None):
         self.compile_directives_vsim = "-quiet -suppress 1346,1236,1090 -2008 -work"
         self.compile_directives_vcom = "-2008 -nowarn COMP96_0564 -nowarn COMP96_0048 -dbg -work"
         self.simulator               = "modelsim"
@@ -34,6 +34,8 @@ class Compiler:
         self._compile_file           = None
         self.compile_file_created    = False
         self.compile_file_closed     = False
+        self.filename                = filename
+        self.testbench               = testbench
 
     def write(self, str):
         self._compile_file.write(str)
@@ -41,7 +43,7 @@ class Compiler:
     def _generate_compile_file(self):
         if not(os.path.isdir("sim")):
             os.mkdir("sim")
-        filename = "compiler.do"
+        filename = self.filename
         print("\nGenerating: sim/%s" %(filename))
         self._compile_file = open("./sim/" + filename, "w");
         self.write("if {[batch_mode]} {\n")
@@ -60,7 +62,7 @@ class Compiler:
         self.write("\nvlib " + lib + "\n")
         self.write("vmap " + lib + " " + lib + "\n")
 
-    def _add_to_compile_file(self, file):
+    def add_to_compile_file(self, file):
         self.write("eval vcom " + self.get_compile_directives() + " " + self.get_library() + "  ../" + file + "\n")
 
     def _get_project_path(self):
@@ -71,9 +73,6 @@ class Compiler:
 
 
     def _run_cmd(self, cmd, verbose = False, path="."):
-        print("-->> %s" %(cmd))
-
-        #env={'vlib': self.modelsim_path, 'vcom': self.modelsim_path, 'vmap': self.modelsim_path})
         if verbose:
             run = subprocess.run(cmd, cwd=path, stdout=FNULL, stderr=subprocess.PIPE, shell=True, env={'PATH': os.getenv('PATH')})
         else:
@@ -89,7 +88,7 @@ class Compiler:
             self._add_library_to_compile_file(self.get_library())
 
         file = '/'.join(file.split('\\'))      
-        self._add_to_compile_file(file)
+        self.add_to_compile_file(file)
 
 
     def compile_files(self, vhdl_collection):
@@ -104,14 +103,16 @@ class Compiler:
     def run_compilation(self):
         if not(self.compile_file_closed): self._close_compile_file()
 
-        print("running compiler")
         path = os.getcwd().replace("\\", "/") + "/sim"
 
         self.env_var = os.environ.copy()
         self.env_var["SIMULATOR"] = "MODELSIM"
 
-        process = subprocess.Popen(['vsim', '-c', '-do', 'do compiler.do; exit -f'], env=self.env_var, stderr=subprocess.PIPE, cwd=path)
+        process = subprocess.Popen(['vsim', '-c', '-do', 'do ' + self.filename + '; exit -f'], env=self.env_var, stderr=subprocess.PIPE, cwd=path)
         process.wait()
+    def run_simulation(self):
+        self.run_compilation()
+
 
 
     def set_simulator(self, sim):
@@ -147,5 +148,21 @@ class Compiler:
             print("WARNING! Library not set")
         return self.library
 
+    def set_testbench(self, testbench):
+        self.testbench = testbench
+    def get_testbench(self):
+        return self.testbench
+
     def clean_up(self):
         if not(self.compile_file_closed): self._close_compile_file()
+
+
+    def add_generics_to_compile_file(self, generics):
+        generic_string = ""
+        for generic in generics:
+            generic_string += str(generic)
+
+        self.write("\n")
+        self.write("# Start testbench\n")
+        self.write("vsim " + generic_string + " " + self.library + "." + self.get_testbench() + "\n")
+        self.write("run -all")
