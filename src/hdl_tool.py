@@ -14,6 +14,7 @@ from finder import Finder
 from collection import Collection
 from test_suite import Test_suite
 from compiler import Compiler
+from testbench import Testbench
 
 
 class Hdl_tool():
@@ -21,8 +22,8 @@ class Hdl_tool():
     def __init__(self):
         self.collection_list = []
         self.organized_list  = []
+        self.testbench_list  = []
         self.project_path = self._get_caller_filepath()
-
         self.compiler = Compiler(self.project_path)
 
 
@@ -88,3 +89,6 @@ class Hdl_tool():
 
     def compile(self):
         self.compile_collection()
+
+    def add_testbench(self, testbench_name, simulator="modelsim", verbose=False):
+        return Testbench(testbench_name, project_path=self.project_path)
