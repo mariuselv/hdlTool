@@ -65,8 +65,12 @@ class Testbench:
 
     def _get_generics(self):
         generic_list = []
-        for generic in self.generics_list:
-            generic_list.append("-g" + generic[0].upper() + "=" + generic[1].lower() + " ")
+        num_generics = len(self.generics_list)
+        for idx, generic in enumerate(self.generics_list):
+            generic_string = "-g" + generic[0].upper() + "=" + generic[1].lower()
+            if (idx + 1) < num_generics:
+                generic_string += " "
+            generic_list.append(generic_string)
         return generic_list
 
     def _run_cmd(self, cmd, path="."):
@@ -91,15 +95,29 @@ class Testbench:
         else:
             return "-suppress 1346,1236 -2008 -work " + self.get_library()
 
+    def run_simulation(self, generics):
+        path = os.getcwd().replace("\\", "/") + "/sim"
+        env_var = os.environ.copy()
+        env_var["SIMULATOR"] = "MODELSIM"
+        for generic in generics:          
+            with open("sim/run.do", 'w') as file:
+                file.write("vsim " + generic + " " + self.get_library() + "." + self.get_entity() + "\n")
+                file.write("run -all\n")
+                file.write("exit -f\n")
+            process = subprocess.Popen(["vsim", "-c", "-do", "run.do"], env=env_var, stderr=subprocess.PIPE, cwd=path)
+            process.wait()
+
+
+
     def run_testbench(self, simulator="modelsim"):
         if self.compiler:
             self.compiler.set_library(self.get_library())
             self.compiler.compile_file(self.get_harness())
             self.compiler.add_to_compile_file(self.get_testbench_name())
-            self.compiler.set_testbench(self.get_entity())
-        else:
-            print("ERROR! No compile file created")
+            self.compiler.run_compilation()
 
-        self.compiler.add_generics_to_compile_file(self._get_generics())
-        self.compiler.run_simulation()
+            self.run_simulation(self._get_generics())
+        else:
+            print("ERROR! No compiler found.")
+        return
 
