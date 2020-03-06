@@ -72,13 +72,6 @@ class Compiler:
         return 'windows' in platform.system().lower()
 
 
-    def _run_cmd(self, cmd, verbose = False, path="."):
-        if verbose:
-            run = subprocess.run(cmd, cwd=path, stdout=FNULL, stderr=subprocess.PIPE, shell=True, env={'PATH': os.getenv('PATH')})
-        else:
-            run = subprocess.run(cmd, cwd=path, stderr=subprocess.PIPE, shell=True, env={'PATH': os.getenv('PATH')})
-
-
     def compile_file(self, file):
         """
         Compile VHD files
@@ -107,13 +100,9 @@ class Compiler:
 
         self.env_var = os.environ.copy()
         self.env_var["SIMULATOR"] = "MODELSIM"
-
+        print("Compiler compiling : %s" %(self.filename))
         process = subprocess.Popen(['vsim', '-c', '-do', 'do ' + self.filename + '; exit -f'], env=self.env_var, stderr=subprocess.PIPE, cwd=path)
         process.wait()
-    def run_simulation(self):
-        self.run_compilation()
-
-
 
     def set_simulator(self, sim):
         if (sim.lower() == "vsim") or (sim.lower() == "modelsim"):
@@ -148,21 +137,5 @@ class Compiler:
             print("WARNING! Library not set")
         return self.library
 
-    def set_testbench(self, testbench):
-        self.testbench = testbench
-    def get_testbench(self):
-        return self.testbench
-
     def clean_up(self):
         if not(self.compile_file_closed): self._close_compile_file()
-
-
-    def add_generics_to_compile_file(self, generics):
-        generic_string = ""
-        for generic in generics:
-            generic_string += str(generic)
-
-        self.write("\n")
-        self.write("# Start testbench\n")
-        self.write("vsim " + generic_string + " " + self.library + "." + self.get_testbench() + "\n")
-        self.write("run -all")
