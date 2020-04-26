@@ -1,13 +1,14 @@
---========================================================================================================================
--- Copyright (c) 2017 by Bitvis AS.  All rights reserved.
--- You should have received a copy of the license file containing the MIT License (see LICENSE.TXT), if not,
--- contact Bitvis AS <support@bitvis.no>.
+--================================================================================================================================
+-- Copyright 2020 Bitvis
+-- Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except in compliance with the License.
+-- You may obtain a copy of the License at http://www.apache.org/licenses/LICENSE-2.0 and in the provided LICENSE.TXT.
 --
--- UVVM AND ANY PART THEREOF ARE PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE
--- WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS
--- OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR
--- OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH UVVM OR THE USE OR OTHER DEALINGS IN UVVM.
---========================================================================================================================
+-- Unless required by applicable law or agreed to in writing, software distributed under the License is distributed on
+-- an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+-- See the License for the specific language governing permissions and limitations under the License.
+--================================================================================================================================
+-- Note : Any functionality not explicitly described in the documentation is subject to change at any time
+----------------------------------------------------------------------------------------------------------------------------------
 
 ------------------------------------------------------------------------------------------
 -- Description   : See library quick reference (under 'doc') and README-file(s)
@@ -25,7 +26,7 @@ context uvvm_util.uvvm_util_context;
 package ti_protected_types_pkg is
 
 
-  type t_activity_watchdog is protected
+  type t_vvc_activity is protected
 
     impure function priv_are_all_vvc_inactive return boolean;
 
@@ -37,7 +38,7 @@ package ti_protected_types_pkg is
 
     procedure priv_report_vvc_activity(
       constant vvc_idx                : natural;
-      constant busy                   : boolean;
+      constant activity               : t_activity;
       constant last_cmd_idx_executed  : integer
     );
 
@@ -45,6 +46,14 @@ package ti_protected_types_pkg is
 
     procedure priv_list_registered_vvc(msg : string);    
 
+    impure function priv_get_vvc_idx_in_activity_register(
+      constant vvc_name         : in string;
+      constant vvc_instance_idx : in integer;
+      constant vvc_channel      : in t_channel := NA
+    ) return integer;
+
+    impure function priv_get_vvc_activity(vvc_idx : natural) return t_activity;
+    impure function priv_get_vvc_last_cmd_idx_executed(vvc_idx : natural) return integer;
   end protected;
 
 
@@ -57,7 +66,7 @@ end package ti_protected_types_pkg;
 package body ti_protected_types_pkg is
 
 
-  type t_activity_watchdog is protected body
+  type t_vvc_activity is protected body
 
     type t_vvc_item is record
       vvc_id     : t_vvc_id;
@@ -72,7 +81,7 @@ package body ti_protected_types_pkg is
     -- Array holding all registered VVCs
     type t_registered_vvc_array   is array (natural range <>) of t_vvc_item;
 
-    variable priv_registered_vvc  : t_registered_vvc_array(0 to C_MAX_VVC_INSTANCE_NUM) := (others => C_VVC_ITEM_DEFAULT);
+    variable priv_registered_vvc  : t_registered_vvc_array(0 to C_MAX_TB_VVC_NUM) := (others => C_VVC_ITEM_DEFAULT);
 
     -- Counter for the number of VVCs that has registered
     variable priv_last_registered_vvc_idx : integer := -1;
@@ -80,10 +89,10 @@ package body ti_protected_types_pkg is
 
     impure function priv_are_all_vvc_inactive return boolean is
     begin
-      check_value(priv_last_registered_vvc_idx /= -1, TB_ERROR, "No VVC in activity watchdog register");
+      check_value(priv_last_registered_vvc_idx /= -1, TB_ERROR, "No VVC in activity watchdog register", C_TB_SCOPE_DEFAULT, ID_NEVER);
 
       for idx in 0 to priv_last_registered_vvc_idx loop
-        if priv_registered_vvc(idx).vvc_state.busy = true then
+        if priv_registered_vvc(idx).vvc_state.activity = ACTIVE then
           return false;
         end if;
       end loop;
@@ -96,13 +105,18 @@ package body ti_protected_types_pkg is
       constant channel                : in t_channel := NA
     ) return integer is
     begin
+      if C_MAX_TB_VVC_NUM <= priv_last_registered_vvc_idx then
+        alert(tb_error, "Number of registered VVCs exceed C_MAX_TB_VVC_NUM.\n"&
+                         "Increase C_MAX_TB_VVC_NUM in adaptations package.");
+      end if;
+
       -- Set registered VVC index
       priv_last_registered_vvc_idx := priv_last_registered_vvc_idx + 1;
       -- Update register
       priv_registered_vvc(priv_last_registered_vvc_idx).vvc_id.name(1 to name'length)   := name;
       priv_registered_vvc(priv_last_registered_vvc_idx).vvc_id.instance                 := instance;
       priv_registered_vvc(priv_last_registered_vvc_idx).vvc_id.channel                  := channel;
-      priv_registered_vvc(priv_last_registered_vvc_idx).vvc_state.busy                  := false;
+      priv_registered_vvc(priv_last_registered_vvc_idx).vvc_state.activity              := INACTIVE;
       priv_registered_vvc(priv_last_registered_vvc_idx).vvc_state.last_cmd_idx_executed := -1;
       -- Return index
       return priv_last_registered_vvc_idx;
@@ -111,12 +125,12 @@ package body ti_protected_types_pkg is
 
     procedure priv_report_vvc_activity(
       constant vvc_idx                : natural;
-      constant busy                   : boolean;
+      constant activity               : t_activity;
       constant last_cmd_idx_executed  : integer
     ) is
     begin
       -- Update VVC status
-      priv_registered_vvc(vvc_idx).vvc_state.busy                  := busy;
+      priv_registered_vvc(vvc_idx).vvc_state.activity              := activity;
       priv_registered_vvc(vvc_idx).vvc_state.last_cmd_idx_executed := last_cmd_idx_executed;
     end procedure priv_report_vvc_activity;
 
@@ -134,22 +148,63 @@ package body ti_protected_types_pkg is
     procedure priv_list_registered_vvc(msg : string) is
       variable v_vvc : t_vvc_id;
     begin
-      log(ID_WATCHDOG, "Activity watchdog registered VVCs: " & msg);
+      log(ID_VVC_ACTIVITY, "VVC activity registered VVCs: " & msg);
 
       for idx in 0 to priv_last_registered_vvc_idx loop
         v_vvc := priv_registered_vvc(idx).vvc_id;
 
         if v_vvc.channel = NA then
-          log(ID_WATCHDOG, to_string(idx+1) & ": " & v_vvc.name & " instance=" & to_string(v_vvc.instance));  
+          log(ID_VVC_ACTIVITY, to_string(idx+1) & ": " & v_vvc.name & " instance=" & to_string(v_vvc.instance));  
         else
-          log(ID_WATCHDOG, to_string(idx+1) & ": " & v_vvc.name & " instance=" & to_string(v_vvc.instance) & ", channel=" & to_string(v_vvc.channel));            
+          log(ID_VVC_ACTIVITY, to_string(idx+1) & ": " & v_vvc.name & " instance=" & to_string(v_vvc.instance) & ", channel=" & to_string(v_vvc.channel));            
         end if;
         
       end loop;
     end procedure priv_list_registered_vvc;
 
+    impure function priv_get_vvc_activity(
+      vvc_idx : natural
+    ) return t_activity is
+    begin
+      check_value(priv_last_registered_vvc_idx >= vvc_idx, TB_ERROR, "Invalid index for VVC activity register: " & to_string(vvc_idx) & ".", C_TB_SCOPE_DEFAULT, ID_NEVER);
+      check_value(vvc_idx > -1, TB_ERROR, "Invalid index for VVC activity register: " & to_string(vvc_idx) & ".", C_TB_SCOPE_DEFAULT, ID_NEVER);
+      return priv_registered_vvc(vvc_idx).vvc_state.activity;
+    end function;
 
-  end protected body t_activity_watchdog;
+
+    impure function priv_get_vvc_last_cmd_idx_executed(
+      vvc_idx : natural
+    ) return integer is
+    begin
+      check_value(priv_last_registered_vvc_idx >= vvc_idx, TB_ERROR, "Invalid index for VVC activity register: " & to_string(vvc_idx) & ".", C_TB_SCOPE_DEFAULT, ID_NEVER);
+      check_value(vvc_idx > -1, TB_ERROR, "Invalid index for VVC activity register: " & to_string(vvc_idx) & ".", C_TB_SCOPE_DEFAULT, ID_NEVER);
+      return priv_registered_vvc(vvc_idx).vvc_state.last_cmd_idx_executed;
+    end function;
+
+
+    impure function priv_get_vvc_idx_in_activity_register(
+      constant vvc_name         : in string;
+      constant vvc_instance_idx : in integer;
+      constant vvc_channel      : in t_channel := NA
+    ) return integer is
+    begin
+      for idx in 0 to priv_last_registered_vvc_idx loop
+        
+        if priv_registered_vvc(idx).vvc_id.name     = vvc_name and
+          priv_registered_vvc(idx).vvc_id.instance  = vvc_instance_idx and
+          priv_registered_vvc(idx).vvc_id.channel   = vvc_channel then
+          -- vvc was found
+          return idx;
+        end if;
+
+      end loop;
+
+      -- not found
+      return -1;
+    end function priv_get_vvc_idx_in_activity_register;
+
+
+  end protected body t_vvc_activity;
 
 
 

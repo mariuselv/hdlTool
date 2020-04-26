@@ -1,13 +1,14 @@
---========================================================================================================================
--- Copyright (c) 2017 by Bitvis AS.  All rights reserved.
--- You should have received a copy of the license file containing the MIT License (see LICENSE.TXT), if not,
--- contact Bitvis AS <support@bitvis.no>.
+--================================================================================================================================
+-- Copyright 2020 Bitvis
+-- Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except in compliance with the License.
+-- You may obtain a copy of the License at http://www.apache.org/licenses/LICENSE-2.0 and in the provided LICENSE.TXT.
 --
--- UVVM AND ANY PART THEREOF ARE PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE
--- WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS
--- OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR
--- OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH UVVM OR THE USE OR OTHER DEALINGS IN UVVM.
---========================================================================================================================
+-- Unless required by applicable law or agreed to in writing, software distributed under the License is distributed on
+-- an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+-- See the License for the specific language governing permissions and limitations under the License.
+--================================================================================================================================
+-- Note : Any functionality not explicitly described in the documentation is subject to change at any time
+----------------------------------------------------------------------------------------------------------------------------------
 
 ------------------------------------------------------------------------------------------
 -- Description   : See library quick reference (under 'doc') and README-file(s)
@@ -82,6 +83,10 @@ package ti_vvc_framework_support_pkg is
   shared variable shared_vvc_broadcast_cmd    : t_vvc_broadcast_cmd_record := C_VVC_BROADCAST_CMD_DEFAULT;
   signal VVC_BROADCAST                        : std_logic := 'L';
 
+  ------------------------------------------------------------------------
+  -- Common signals for triggering VVC activity in central VVC register
+  ------------------------------------------------------------------------
+  signal global_trigger_vvc_activity_register  : std_logic := '0';
 
   ------------------------------------------------------------------------
   -- Common signal for signalling between VVCs, used during await_any_completion()
@@ -162,7 +167,7 @@ package ti_vvc_framework_support_pkg is
     constant msg_id             : in t_msg_id;
     constant msg                : in string := "";
     constant quietness          : in t_quietness := NON_QUIET;
-    constant scope              : in string      := C_TB_SCOPE_DEFAULT & "(uvvm)"
+    constant scope              : in string      := C_VVC_CMD_SCOPE_DEFAULT
   );
 
   -------------------------------------------
@@ -174,7 +179,7 @@ package ti_vvc_framework_support_pkg is
     constant msg_id             : in t_msg_id;
     constant msg                : in string := "";
     constant quietness          : in t_quietness := NON_QUIET;
-    constant scope              : in string      := C_TB_SCOPE_DEFAULT & "(uvvm)"
+    constant scope              : in string      := C_VVC_CMD_SCOPE_DEFAULT
   );
 
   -------------------------------------------
@@ -184,7 +189,7 @@ package ti_vvc_framework_support_pkg is
   procedure flush_command_queue(
     signal VVC_BROADCAST        : inout std_logic;
     constant msg                : in string := "";
-    constant scope              : in string := C_TB_SCOPE_DEFAULT & "(uvvm)"
+    constant scope              : in string := C_VVC_CMD_SCOPE_DEFAULT
   );
 
   -------------------------------------------
@@ -195,7 +200,7 @@ package ti_vvc_framework_support_pkg is
     signal VVC_BROADCAST        : inout std_logic;
     constant delay              : in natural;  -- in clock cycles
     constant msg                : in string  := "";
-    constant scope              : in string  := C_TB_SCOPE_DEFAULT & "(uvvm)"
+    constant scope              : in string  := C_VVC_CMD_SCOPE_DEFAULT
   );
 
   -------------------------------------------
@@ -206,7 +211,7 @@ package ti_vvc_framework_support_pkg is
     signal VVC_BROADCAST        : inout std_logic;
     constant delay              : in time;
     constant msg                : in string  := "";
-    constant scope              : in string  := C_TB_SCOPE_DEFAULT & "(uvvm)"
+    constant scope              : in string  := C_VVC_CMD_SCOPE_DEFAULT
   );
 
   -------------------------------------------
@@ -217,7 +222,7 @@ package ti_vvc_framework_support_pkg is
     signal VVC_BROADCAST        : inout std_logic;
     constant timeout            : in time;
     constant msg                : in string  := "";
-    constant scope              : in string  := C_TB_SCOPE_DEFAULT & "(uvvm)"
+    constant scope              : in string  := C_VVC_CMD_SCOPE_DEFAULT
   );
 
   -------------------------------------------
@@ -227,7 +232,7 @@ package ti_vvc_framework_support_pkg is
   procedure terminate_current_command(
     signal VVC_BROADCAST        : inout std_logic;
     constant msg                : in string  := "";
-    constant scope              : in string  := C_TB_SCOPE_DEFAULT & "(uvvm)"
+    constant scope              : in string  := C_VVC_CMD_SCOPE_DEFAULT
   );
 
   -------------------------------------------
@@ -237,7 +242,7 @@ package ti_vvc_framework_support_pkg is
   procedure terminate_all_commands(
     signal VVC_BROADCAST        : inout std_logic;
     constant msg                : in string  := "";
-    constant scope              : in string  := C_TB_SCOPE_DEFAULT & "(uvvm)"
+    constant scope              : in string  := C_VVC_CMD_SCOPE_DEFAULT
   );
   -------------------------------------------
   -- transmit_broadcast
@@ -253,7 +258,7 @@ package ti_vvc_framework_support_pkg is
     constant delay              : in time         := 0 ns;
     constant delay_int          : in integer      := -1;
     constant timeout            : in time         := std.env.resolution_limit;
-    constant scope              : in string       := C_TB_SCOPE_DEFAULT & "(uvvm)"
+    constant scope              : in string       := C_VVC_CMD_SCOPE_DEFAULT
   );
 
   -------------------------------------------
@@ -292,47 +297,50 @@ package ti_vvc_framework_support_pkg is
     constant num_exp_vvc  : natural;
     constant timeout      : time;
     constant alert_level  : t_alert_level := TB_ERROR;
-    constant msg          : string := "AW_1"
+    constant msg          : string := "Activity_Watchdog"
   );
 
-  signal global_trigger_activity_watchdog  : std_logic := '0';
-  shared variable shared_activity_watchdog : t_activity_watchdog;
+
+  -- ============================================================================
+  -- VVC Activity Register
+  -- ============================================================================
+
+  shared variable shared_vvc_activity_register : t_vvc_activity;
+
 
   -- ============================================================================
   -- Hierarchical VVC (HVVC)
   -- ============================================================================
-
-  type t_vvc_operation is (TRANSMIT, RECEIVE);
-  type t_interface is (SBI, GMII);
-  type t_direction is (TRANSMIT, RECEIVE);
+  type t_vvc_operation is (TRANSMIT, RECEIVE); -- Type of operation to be executed by the VVC
+  type t_direction is (TRANSMIT, RECEIVE);     -- Direction of the interface (used by the IF field config)
 
   type t_hvvc_to_bridge is record
-    trigger                   : boolean;
-    operation                 : t_vvc_operation;
-    num_data_bytes            : positive;
-    data_bytes                : t_byte_array;
-    dut_if_field_idx          : natural;
-    current_byte_idx_in_field : natural;
-    msg_id_panel              : t_msg_id_panel;
-    field_timeout_margin      : time;
+    trigger          : boolean;          -- Trigger signal
+    operation        : t_vvc_operation;  -- Operation of the VVC
+    num_data_words   : positive;         -- Number of data words transferred
+    data_words       : t_slv_array;      -- Data sent to the VVC
+    dut_if_field_idx : natural;          -- Index of the interface field
+    msg_id_panel     : t_msg_id_panel;   -- Message ID panel of the HVVC
   end record;
 
   type t_bridge_to_hvvc is record
-    trigger        : boolean;
-    data_bytes     : t_byte_array;
+    trigger          : boolean;          -- Trigger signal
+    data_words       : t_slv_array;      -- Data received from the VVC
   end record;
 
   type t_dut_if_field_config is record
-    dut_address                : unsigned;
-    dut_address_increment      : integer;
-    data_width                 : positive;
-    field_description          : string;
+    dut_address           : unsigned;    -- Address of the DUT IF field
+    dut_address_increment : integer;     -- Incrementation of the address on each access
+    data_width            : positive;    -- Width of the data per transfer
+    use_field             : boolean;     -- Used by the HVVC to send/request fields to/from the bridge or ignore them when not applicable
+    field_description     : string;      -- Description of the DUT IF field
   end record;
 
   constant C_DUT_IF_FIELD_CONFIG_DEFAULT : t_dut_if_field_config(dut_address(0 downto 0)) := (
     dut_address                => (others => '0'),
     dut_address_increment      => 0,
     data_width                 => 8,
+    use_field                  => true,
     field_description          => "default");
 
   type t_dut_if_field_config_array is array (natural range <>) of t_dut_if_field_config;
@@ -376,7 +384,7 @@ package body ti_vvc_framework_support_pkg is
   begin
     flag.reset <= 'Z';
     flag.is_active <= 'Z';
-    gen_pulse(flag.set, 0 ns, "set flag");
+    gen_pulse(flag.set, 0 ns, "set flag", C_TB_SCOPE_DEFAULT, ID_NEVER);
   end procedure;
 
   procedure reset_flag(
@@ -410,7 +418,7 @@ package body ti_vvc_framework_support_pkg is
     constant msg_id             : in t_msg_id;
     constant msg                : in string := "";
     constant quietness          : in t_quietness := NON_QUIET;
-    constant scope              : in string      := C_TB_SCOPE_DEFAULT & "(uvvm)"
+    constant scope              : in string      := C_VVC_CMD_SCOPE_DEFAULT
   ) is
     constant proc_name : string := "enable_log_msg";
     constant proc_call : string := proc_name & "(VVC_BROADCAST, " & to_upper(to_string(msg_id)) & ")";
@@ -424,7 +432,7 @@ package body ti_vvc_framework_support_pkg is
     constant msg_id             : in t_msg_id;
     constant msg                : in string := "";
     constant quietness          : in t_quietness := NON_QUIET;
-    constant scope              : in string      := C_TB_SCOPE_DEFAULT & "(uvvm)"
+    constant scope              : in string      := C_VVC_CMD_SCOPE_DEFAULT
   ) is
     constant proc_name : string := "disable_log_msg";
     constant proc_call : string := proc_name & "(VVC_BROADCAST, " & to_upper(to_string(msg_id)) & ")";
@@ -436,7 +444,7 @@ package body ti_vvc_framework_support_pkg is
   procedure flush_command_queue(
     signal VVC_BROADCAST        : inout std_logic;
     constant msg                : in string := "";
-    constant scope              : in string := C_TB_SCOPE_DEFAULT & "(uvvm)"
+    constant scope              : in string := C_VVC_CMD_SCOPE_DEFAULT
   ) is
     constant proc_name : string := "flush_command_queue";
     constant proc_call : string := proc_name & "(VVC_BROADCAST)";
@@ -449,7 +457,7 @@ package body ti_vvc_framework_support_pkg is
     signal VVC_BROADCAST        : inout std_logic;
     constant delay              : in natural;  -- in clock cycles
     constant msg                : in string := "";
-    constant scope              : in string := C_TB_SCOPE_DEFAULT & "(uvvm)"
+    constant scope              : in string := C_VVC_CMD_SCOPE_DEFAULT
   ) is
     constant proc_name : string := "insert_delay";
     constant proc_call : string := proc_name & "(VVC_BROADCAST, " & to_string(delay) & ")";
@@ -462,7 +470,7 @@ package body ti_vvc_framework_support_pkg is
     signal VVC_BROADCAST        : inout std_logic;
     constant delay              : in time;
     constant msg                : in string := "";
-    constant scope              : in string := C_TB_SCOPE_DEFAULT & "(uvvm)"
+    constant scope              : in string := C_VVC_CMD_SCOPE_DEFAULT
   ) is
     constant proc_name : string := "insert_delay";
     constant proc_call : string := proc_name & "(VVC_BROADCAST, " & to_string(delay) & ")";
@@ -474,7 +482,7 @@ package body ti_vvc_framework_support_pkg is
     signal VVC_BROADCAST        : inout std_logic;
     constant timeout            : in time;
     constant msg                : in string := "";
-    constant scope              : in string := C_TB_SCOPE_DEFAULT & "(uvvm)"
+    constant scope              : in string := C_VVC_CMD_SCOPE_DEFAULT
   ) is
     constant proc_name : string := "await_completion";
     constant proc_call : string := proc_name & "(VVC_BROADCAST)";
@@ -485,7 +493,7 @@ package body ti_vvc_framework_support_pkg is
   procedure terminate_current_command(
     signal VVC_BROADCAST        : inout std_logic;
     constant msg                : in string := "";
-    constant scope              : in string := C_TB_SCOPE_DEFAULT & "(uvvm)"
+    constant scope              : in string := C_VVC_CMD_SCOPE_DEFAULT
   ) is
     constant proc_name : string := "terminate_current_command";
     constant proc_call : string := proc_name & "(VVC_BROADCAST)";
@@ -496,7 +504,7 @@ package body ti_vvc_framework_support_pkg is
   procedure terminate_all_commands(
     signal VVC_BROADCAST        : inout std_logic;
     constant msg                : in string := "";
-    constant scope              : in string := C_TB_SCOPE_DEFAULT & "(uvvm)"
+    constant scope              : in string := C_VVC_CMD_SCOPE_DEFAULT
   ) is
     constant proc_name : string := "terminate_all_commands";
     constant proc_call : string := proc_name & "(VVC_BROADCAST)";
@@ -515,7 +523,8 @@ package body ti_vvc_framework_support_pkg is
     constant delay              : in time         := 0 ns;
     constant delay_int          : in integer      := -1;
     constant timeout            : in time         := std.env.resolution_limit;
-    constant scope              : in string       := C_TB_SCOPE_DEFAULT & "(uvvm)") is
+    constant scope              : in string       := C_VVC_CMD_SCOPE_DEFAULT
+  ) is
   begin
     await_semaphore_in_delta_cycles(protected_semaphore);
 
@@ -676,7 +685,7 @@ package body ti_vvc_framework_support_pkg is
     constant num_exp_vvc  : natural;
     constant timeout      : time;
     constant alert_level  : t_alert_level := TB_ERROR;
-    constant msg          : string := "AW_1"
+    constant msg          : string := "Activity_Watchdog"
   ) is
     variable v_timeout    : time;
 
@@ -686,22 +695,17 @@ package body ti_vvc_framework_support_pkg is
     wait for 0 ns;
 
     -- Check if all expected VVCs are registered
-    if num_exp_vvc = shared_activity_watchdog.priv_get_num_registered_vvc then
-      log(ID_WATCHDOG, "Number of VVCs in activity watchdog is expected. " & msg);
-    else
-      shared_activity_watchdog.priv_list_registered_vvc(msg);
+    if num_exp_vvc /= shared_vvc_activity_register.priv_get_num_registered_vvc then
+      shared_vvc_activity_register.priv_list_registered_vvc(msg);
       alert(TB_WARNING, "Number of VVCs in activity watchdog is not expected, actual=" &
-                        to_string(shared_activity_watchdog.priv_get_num_registered_vvc) & ", exp=" & to_string(num_exp_vvc) & ".\n" &
+                        to_string(shared_vvc_activity_register.priv_get_num_registered_vvc) & ", exp=" & to_string(num_exp_vvc) & ".\n" &
                         "Note that leaf VVCs (e.g. channels) are counted individually. " & msg);
-
     end if;
 
-
-
     loop
-      wait on global_trigger_activity_watchdog for timeout;
+      wait on global_trigger_vvc_activity_register for timeout;
 
-      if not(global_trigger_activity_watchdog'event) and shared_activity_watchdog.priv_are_all_vvc_inactive then
+      if not(global_trigger_vvc_activity_register'event) and shared_vvc_activity_register.priv_are_all_vvc_inactive then
           alert(alert_level, "Activity watchdog timer ended after " & to_string(timeout, C_LOG_TIME_BASE) & "! " & msg);
       end if;
 

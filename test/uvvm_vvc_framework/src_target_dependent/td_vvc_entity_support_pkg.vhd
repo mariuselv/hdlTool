@@ -1,13 +1,14 @@
---========================================================================================================================
--- Copyright (c) 2017 by Bitvis AS.  All rights reserved.
--- You should have received a copy of the license file containing the MIT License (see LICENSE.TXT), if not,
--- contact Bitvis AS <support@bitvis.no>.
+--================================================================================================================================
+-- Copyright 2020 Bitvis
+-- Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except in compliance with the License.
+-- You may obtain a copy of the License at http://www.apache.org/licenses/LICENSE-2.0 and in the provided LICENSE.TXT.
 --
--- UVVM AND ANY PART THEREOF ARE PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE
--- WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS
--- OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR
--- OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH UVVM OR THE USE OR OTHER DEALINGS IN UVVM.
---========================================================================================================================
+-- Unless required by applicable law or agreed to in writing, software distributed under the License is distributed on
+-- an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+-- See the License for the specific language governing permissions and limitations under the License.
+--================================================================================================================================
+-- Note : Any functionality not explicitly described in the documentation is subject to change at any time
+----------------------------------------------------------------------------------------------------------------------------------
 
 ------------------------------------------------------------------------------------------
 -- Description   : See library quick reference (under 'doc') and README-file(s)
@@ -369,8 +370,8 @@ package body td_vvc_entity_support_pkg is
     variable v_delta_cycle_counter  : natural := 0;
     variable v_comma_number     : natural := 0;
   begin
-    check_value(instance_idx <= C_MAX_VVC_INSTANCE_NUM, TB_FAILURE, "Generic VVC Instance index =" & to_string(instance_idx) &
-                " cannot exceed C_MAX_VVC_INSTANCE_NUM in UVVM adaptations = " & to_string(C_MAX_VVC_INSTANCE_NUM), C_SCOPE, ID_NEVER);
+    check_value(instance_idx <= C_MAX_VVC_INSTANCE_NUM-1, TB_FAILURE, "Generic VVC Instance index =" & to_string(instance_idx) &
+                " cannot exceed C_MAX_VVC_INSTANCE_NUM-1 in UVVM adaptations = " & to_string(C_MAX_VVC_INSTANCE_NUM-1), C_SCOPE, ID_NEVER);
     vvc_config.bfm_config :=  bfm_config;
     vvc_config.cmd_queue_count_max := cmd_queue_count_max;
     vvc_config.cmd_queue_count_threshold := cmd_queue_count_threshold;
@@ -415,7 +416,9 @@ package body td_vvc_entity_support_pkg is
         wait for 0 ns;
         v_delta_cycle_counter := v_delta_cycle_counter + 1;
         exit when shared_uvvm_state = PHASE_A;
-        check_value((shared_uvvm_state /= IDLE), TB_FAILURE, "UVVM will not work without intitalize_uvvm instantiated as a concurrent procedure in the test harness", scope);
+        if shared_uvvm_state /= IDLE then
+          alert(TB_FAILURE, "UVVM will not work without entity ti_uvvm_engine instantiated in the testbench or test harness.");
+        end if;       
       end loop;
     end if;
 
@@ -502,8 +505,10 @@ package body td_vvc_entity_support_pkg is
     constant vvc_config : in t_vvc_config
   ) return t_msg_id_panel is
   begin
-    --if command.use_provided_msg_id_panel = USE_PROVIDED_MSG_ID_PANEL then
-    --  return command.msg_id_panel;
+    -- If the parent_msg_id_panel is set then use it,
+    -- otherwise use the VVCs msg_id_panel from its config.
+    --if command.parent_msg_id_panel /= C_UNUSED_MSG_ID_PANEL then
+    --  return command.parent_msg_id_panel;
     --else
     --  return vvc_config.msg_id_panel;
     --end if;

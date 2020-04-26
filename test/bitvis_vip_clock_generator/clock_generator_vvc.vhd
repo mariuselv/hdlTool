@@ -1,3 +1,14 @@
+--================================================================================================================================
+-- Copyright 2020 Bitvis
+-- Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except in compliance with the License.
+-- You may obtain a copy of the License at http://www.apache.org/licenses/LICENSE-2.0 and in the provided LICENSE.TXT.
+--
+-- Unless required by applicable law or agreed to in writing, software distributed under the License is distributed on
+-- an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+-- See the License for the specific language governing permissions and limitations under the License.
+--================================================================================================================================
+-- Note : Any functionality not explicitly described in the documentation is subject to change at any time
+----------------------------------------------------------------------------------------------------------------------------------
 --========================================================================================================================
 -- This VVC was generated with Bitvis VVC Generator
 --========================================================================================================================
@@ -53,8 +64,8 @@ architecture behave of clock_generator_vvc is
   signal last_cmd_idx_executed  : natural        := 0;
   signal terminate_current_cmd  : t_flag_record;
   signal clock_ena              : boolean        := false;
-  -- Activity Watchdog
-  signal vvc_idx_for_activity_watchdog : integer;  
+  -- VVC Activity 
+  signal entry_num_in_vvc_activity_register : integer; 
 
   -- Instantiation of the element dedicated executor
   shared variable command_queue : work.td_cmd_queue_pkg.t_generic_queue;
@@ -119,9 +130,9 @@ begin
     work.td_vvc_entity_support_pkg.initialize_interpreter(terminate_current_cmd, global_awaiting_completion);
     -- initialise shared_vvc_last_received_cmd_idx for channel and instance
     shared_vvc_last_received_cmd_idx(NA, GC_INSTANCE_IDX) := 0;
-     -- Register VVC in activity watchdog register
-     vvc_idx_for_activity_watchdog <= shared_activity_watchdog.priv_register_vvc( name => "CLOCK_GENERATOR",
-                                                                                  instance  => GC_INSTANCE_IDX);
+    -- Register VVC in vvc activity register
+    entry_num_in_vvc_activity_register <= shared_vvc_activity_register.priv_register_vvc(name      => "CLOCK_GENERATOR",
+                                                                                         instance  => GC_INSTANCE_IDX);
     -- Set initial value of v_msg_id_panel to msg_id_panel in config
     v_msg_id_panel := vvc_config.msg_id_panel;
 
@@ -135,7 +146,8 @@ begin
       v_cmd_has_been_acked := false; -- Clear flag
       -- update shared_vvc_last_received_cmd_idx with received command index
       shared_vvc_last_received_cmd_idx(NA, GC_INSTANCE_IDX) := v_local_vvc_cmd.cmd_idx;
-      -- Update v_msg_id_panel
+      -- Select between a provided msg_id_panel via the vvc_cmd_record from a VVC with a higher hierarchy or the
+      -- msg_id_panel in this VVC's config. This is to correctly handle the logging when using Hierarchical-VVCs.
       v_msg_id_panel := get_msg_id_panel(v_local_vvc_cmd, vvc_config);
 
       -- 2a. Put command on the executor if intended for the executor
@@ -198,14 +210,8 @@ begin
 -- - Fetch and execute the commands
 --========================================================================================================================
   cmd_executor : process
-    variable v_cmd                                    : t_vvc_cmd_record;
-    variable v_timestamp_start_of_current_bfm_access  : time := 0 ns;
-    variable v_timestamp_start_of_last_bfm_access     : time := 0 ns;
-    variable v_timestamp_end_of_last_bfm_access       : time := 0 ns;
-    variable v_command_is_bfm_access                  : boolean := false;
-    variable v_prev_command_was_bfm_access            : boolean := false;
-    variable v_msg_id_panel                           : t_msg_id_panel;
-
+    variable v_cmd          : t_vvc_cmd_record;
+    variable v_msg_id_panel : t_msg_id_panel;
   
   begin
 
@@ -217,17 +223,18 @@ begin
 
     loop
 
-      -- Notify activity watchdog - Clock Generator VVC will not register activity
-      --activity_watchdog_register_vvc_state(global_trigger_activity_watchdog, false, vvc_idx_for_activity_watchdog, last_cmd_idx_executed, C_SCOPE);
+      -- -- update vvc activity
+      -- update_vvc_activity_register(global_trigger_vvc_activity_register, INACTIVE, entry_num_in_vvc_activity_register, last_cmd_idx_executed, command_queue.is_empty(VOID), C_SCOPE);
 
       -- 1. Set defaults, fetch command and log
       -------------------------------------------------------------------------
       work.td_vvc_entity_support_pkg.fetch_command_and_prepare_executor(v_cmd, command_queue, vvc_config, vvc_status, queue_is_increasing, executor_is_busy, C_VVC_LABELS, v_msg_id_panel);
 
-      -- Notify activity watchdog - Clock Generator VVC will not register activity
-      --activity_watchdog_register_vvc_state(global_trigger_activity_watchdog, true, vvc_idx_for_activity_watchdog, last_cmd_idx_executed, C_SCOPE);
+      -- -- update vvc activity
+      -- update_vvc_activity_register(global_trigger_vvc_activity_register, ACTIVE, entry_num_in_vvc_activity_register, last_cmd_idx_executed, command_queue.is_empty(VOID), C_SCOPE);
 
-      -- Update v_msg_id_panel
+      -- Select between a provided msg_id_panel via the vvc_cmd_record from a VVC with a higher hierarchy or the
+      -- msg_id_panel in this VVC's config. This is to correctly handle the logging when using Hierarchical-VVCs.
       v_msg_id_panel := get_msg_id_panel(v_cmd, vvc_config);
 
       -- 2. Execute the fetched command
@@ -269,7 +276,7 @@ begin
         -- UVVM common operations
         --===================================
         when INSERT_DELAY =>
-          log(ID_INSERTED_DELAY, "Running: " & to_string(v_cmd.proc_call) & " " & format_command_idx(v_cmd), C_SCOPE, vvc_config.msg_id_panel);
+          log(ID_INSERTED_DELAY, "Running: " & to_string(v_cmd.proc_call) & " " & format_command_idx(v_cmd), C_SCOPE, v_msg_id_panel);
           if v_cmd.gen_integer_array(0) = -1 then
             -- Delay specified using time
             wait until terminate_current_cmd.is_active = '1' for v_cmd.delay;
@@ -282,19 +289,9 @@ begin
           tb_error("Unsupported local command received for execution: '" & to_string(v_cmd.operation) & "'", C_SCOPE);
       end case;
 
-      if v_command_is_bfm_access then
-        v_timestamp_end_of_last_bfm_access := now;
-        v_timestamp_start_of_last_bfm_access := v_timestamp_start_of_current_bfm_access;
-        if ((vvc_config.inter_bfm_delay.delay_type = TIME_START2START) and
-           ((now - v_timestamp_start_of_current_bfm_access) > vvc_config.inter_bfm_delay.delay_in_time)) then
-          alert(vvc_config.inter_bfm_delay.inter_bfm_delay_violation_severity, "BFM access exceeded specified start-to-start inter-bfm delay, " &
-                to_string(vvc_config.inter_bfm_delay.delay_in_time) & ".", C_SCOPE);
-        end if;
-      end if;
-
       -- Reset terminate flag if any occurred
       if (terminate_current_cmd.is_active = '1') then
-        log(ID_CMD_EXECUTOR, "Termination request received", C_SCOPE, vvc_config.msg_id_panel);
+        log(ID_CMD_EXECUTOR, "Termination request received", C_SCOPE, v_msg_id_panel);
         uvvm_vvc_framework.ti_vvc_framework_support_pkg.reset_flag(terminate_current_cmd);
       end if;
 

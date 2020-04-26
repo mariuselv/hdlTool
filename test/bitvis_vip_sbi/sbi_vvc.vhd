@@ -1,13 +1,14 @@
---========================================================================================================================
--- Copyright (c) 2017 by Bitvis AS.  All rights reserved.
--- You should have received a copy of the license file containing the MIT License (see LICENSE.TXT), if not,
--- contact Bitvis AS <support@bitvis.no>.
+--================================================================================================================================
+-- Copyright 2020 Bitvis
+-- Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except in compliance with the License.
+-- You may obtain a copy of the License at http://www.apache.org/licenses/LICENSE-2.0 and in the provided LICENSE.TXT.
 --
--- UVVM AND ANY PART THEREOF ARE PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE
--- WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS
--- OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR
--- OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH UVVM OR THE USE OR OTHER DEALINGS IN UVVM.
---========================================================================================================================
+-- Unless required by applicable law or agreed to in writing, software distributed under the License is distributed on
+-- an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+-- See the License for the specific language governing permissions and limitations under the License.
+--================================================================================================================================
+-- Note : Any functionality not explicitly described in the documentation is subject to change at any time
+----------------------------------------------------------------------------------------------------------------------------------
 
 ------------------------------------------------------------------------------------------
 -- Description   : See library quick reference (under 'doc') and README-file(s)
@@ -86,10 +87,11 @@ architecture behave of sbi_vvc is
   alias vvc_config       : t_vvc_config is shared_sbi_vvc_config(GC_INSTANCE_IDX);
   alias vvc_status       : t_vvc_status is shared_sbi_vvc_status(GC_INSTANCE_IDX);
   alias transaction_info : t_transaction_info is shared_sbi_transaction_info(GC_INSTANCE_IDX);
-  -- DTT
-  alias dtt_transaction_info    : t_transaction_group is global_sbi_vvc_transaction(GC_INSTANCE_IDX);
-  -- Activity Watchdog
-  signal vvc_idx_for_activity_watchdog : integer;
+  -- Transaction info
+  alias vvc_transaction_info_trigger  : std_logic           is global_sbi_vvc_transaction_trigger(GC_INSTANCE_IDX);
+  alias vvc_transaction_info          : t_transaction_group is shared_sbi_vvc_transaction_info(GC_INSTANCE_IDX);
+  -- VVC Activity 
+  signal entry_num_in_vvc_activity_register : integer;
 
 begin
 
@@ -119,10 +121,9 @@ begin
 
     -- initialise shared_vvc_last_received_cmd_idx for channel and instance
     shared_vvc_last_received_cmd_idx(NA, GC_INSTANCE_IDX) := 0;
-
-    -- Register VVC in activity watchdog register
-    vvc_idx_for_activity_watchdog <= shared_activity_watchdog.priv_register_vvc(name      => "SBI",
-                                                                                instance  => GC_INSTANCE_IDX);
+    -- Register VVC in vvc activity register
+    entry_num_in_vvc_activity_register <= shared_vvc_activity_register.priv_register_vvc(name      => C_VVC_NAME, 
+                                                                                         instance  => GC_INSTANCE_IDX);
     -- Set initial value of v_msg_id_panel to msg_id_panel in config
     v_msg_id_panel := vvc_config.msg_id_panel;
 
@@ -136,7 +137,8 @@ begin
       v_cmd_has_been_acked := false; -- Clear flag
       -- update shared_vvc_last_received_cmd_idx with received command index
       shared_vvc_last_received_cmd_idx(NA, GC_INSTANCE_IDX) := v_local_vvc_cmd.cmd_idx;
-      -- update v_msg_id_panel
+      -- Select between a provided msg_id_panel via the vvc_cmd_record from a VVC with a higher hierarchy or the
+      -- msg_id_panel in this VVC's config. This is to correctly handle the logging when using Hierarchical-VVCs.
       v_msg_id_panel := get_msg_id_panel(v_local_vvc_cmd, vvc_config);
 
       -- 2a. Put command on the queue if intended for the executor
@@ -223,22 +225,22 @@ begin
 
 
     -- Setup SBI scoreboard
-    shared_sbi_sb.set_scope("SBI_VVC");
-    shared_sbi_sb.enable(GC_INSTANCE_IDX, "SB SBI Enabled");
-    shared_sbi_sb.config(GC_INSTANCE_IDX, C_SB_CONFIG_DEFAULT);
-    shared_sbi_sb.enable_log_msg(ID_DATA);
+    SBI_VVC_SB.set_scope("SBI_VVC_SB");
+    SBI_VVC_SB.enable(GC_INSTANCE_IDX, "SBI VVC SB Enabled");
+    SBI_VVC_SB.config(GC_INSTANCE_IDX, C_SB_CONFIG_DEFAULT);
+    SBI_VVC_SB.enable_log_msg(GC_INSTANCE_IDX, ID_DATA);
 
     loop
 
-      -- Notify activity watchdog
-      activity_watchdog_register_vvc_state(global_trigger_activity_watchdog, false, vvc_idx_for_activity_watchdog, last_cmd_idx_executed, C_SCOPE);
+      -- update vvc activity
+      update_vvc_activity_register(global_trigger_vvc_activity_register, INACTIVE, entry_num_in_vvc_activity_register, last_cmd_idx_executed, command_queue.is_empty(VOID), C_SCOPE);
 
       -- 1. Set defaults, fetch command and log
       -------------------------------------------------------------------------
       fetch_command_and_prepare_executor(v_cmd, command_queue, vvc_config, vvc_status, queue_is_increasing, executor_is_busy, C_VVC_LABELS, v_msg_id_panel);
 
-      -- Notify activity watchdog
-      activity_watchdog_register_vvc_state(global_trigger_activity_watchdog, true, vvc_idx_for_activity_watchdog, last_cmd_idx_executed, C_SCOPE);
+      -- update vvc activity
+      update_vvc_activity_register(global_trigger_vvc_activity_register, ACTIVE, entry_num_in_vvc_activity_register, last_cmd_idx_executed, command_queue.is_empty(VOID), C_SCOPE);
 
 
       -- Set the transaction info for waveview
@@ -246,7 +248,8 @@ begin
       transaction_info.operation := v_cmd.operation;
       transaction_info.msg       := pad_string(to_string(v_cmd.msg), ' ', transaction_info.msg'length);
 
-      -- update v_msg_id_panel
+      -- Select between a provided msg_id_panel via the vvc_cmd_record from a VVC with a higher hierarchy or the
+      -- msg_id_panel in this VVC's config. This is to correctly handle the logging when using Hierarchical-VVCs.
       v_msg_id_panel := get_msg_id_panel(v_cmd, vvc_config);
 
       -- Check if command is a BFM access
@@ -282,15 +285,15 @@ begin
             -- Randomise data if applicable
             case v_cmd.randomisation is
               when RANDOM =>
-                v_cmd.data := std_logic_vector(to_unsigned(random(0, 16), v_cmd.data'length)); -- Hard coded for TB example
+                v_cmd.data := std_logic_vector(random(v_cmd.data'length));
               when RANDOM_FAVOUR_EDGES =>
                 null; -- Not implemented yet
               when others => -- NA
                 null;
             end case;
 
-            -- Set DTT
-            set_global_dtt(dtt_transaction_info, v_cmd, vvc_config);
+            -- Set VVC Transaction Info
+            set_global_vvc_transaction_info(vvc_transaction_info_trigger, vvc_transaction_info, v_cmd, vvc_config);
 
             -- Normalise address and data
             v_normalised_addr := normalize_and_check(v_cmd.addr, v_normalised_addr, ALLOW_WIDER_NARROWER, "addr", "shared_vvc_cmd.addr", "sbi_write() called with to wide addrress. " & v_cmd.msg);
@@ -308,14 +311,14 @@ begin
                       msg_id_panel => v_msg_id_panel,
                       config       => vvc_config.bfm_config);
 
-            -- Set DTT back to default values
-            restore_global_dtt(dtt_transaction_info, v_cmd);
+            -- Set VVC Transaction Info back to default values
+            reset_vvc_transaction_info(vvc_transaction_info, v_cmd);
           end loop;
 
 
         when READ =>
-          -- Set DTT
-          set_global_dtt(dtt_transaction_info, v_cmd, vvc_config);
+          -- Set VVC Transaction Info
+          set_global_vvc_transaction_info(vvc_transaction_info_trigger, vvc_transaction_info, v_cmd, vvc_config);
 
           -- Normalise address and data
           v_normalised_addr := normalize_and_check(v_cmd.addr, v_normalised_addr, ALLOW_WIDER_NARROWER, "addr", "shared_vvc_cmd.addr", "sbi_read() called with to wide addrress. " & v_cmd.msg);
@@ -334,8 +337,8 @@ begin
 
           -- Request SB check result
           if v_cmd.data_routing = TO_SB then
-            -- call SB check_recevide
-            shared_sbi_sb.check_received(GC_INSTANCE_IDX, v_read_data(GC_DATA_WIDTH-1 downto 0));
+            -- call SB check_received
+            SBI_VVC_SB.check_received(GC_INSTANCE_IDX, pad_sb_slv(v_read_data(GC_DATA_WIDTH-1 downto 0)));
           else
             work.td_vvc_entity_support_pkg.store_result(result_queue => result_queue,
                                                          cmd_idx     => v_cmd.cmd_idx,
@@ -344,8 +347,8 @@ begin
 
 
         when CHECK =>
-          -- Set DTT
-          set_global_dtt(dtt_transaction_info, v_cmd, vvc_config);
+          -- Set VVC Transaction Info
+          set_global_vvc_transaction_info(vvc_transaction_info_trigger, vvc_transaction_info, v_cmd, vvc_config);
 
           -- Normalise address and data
           v_normalised_addr := normalize_and_check(v_cmd.addr, v_normalised_addr, ALLOW_WIDER_NARROWER, "addr", "shared_vvc_cmd.addr", "sbi_check() called with to wide addrress. " & v_cmd.msg);
@@ -366,8 +369,8 @@ begin
 
 
         when POLL_UNTIL =>
-          -- Set DTT
-          set_global_dtt(dtt_transaction_info, v_cmd, vvc_config);
+          -- Set VVC Transaction Info
+          set_global_vvc_transaction_info(vvc_transaction_info_trigger, vvc_transaction_info, v_cmd, vvc_config);
 
           -- Normalise address and data
           v_normalised_addr := normalize_and_check(v_cmd.addr, v_normalised_addr, ALLOW_WIDER_NARROWER, "addr", "shared_vvc_cmd.addr", "sbi_poll_until() called with to wide addrress. " & v_cmd.msg);
@@ -400,6 +403,8 @@ begin
             wait until terminate_current_cmd.is_active = '1' for v_cmd.delay;
           else
             -- Delay specified using integer
+            check_value(vvc_config.bfm_config.clock_period > -1 ns, TB_ERROR, "Check that clock_period is configured when using insert_delay().",
+                        C_SCOPE, ID_NEVER, v_msg_id_panel);
             wait until terminate_current_cmd.is_active = '1' for v_cmd.gen_integer_array(0) * vvc_config.bfm_config.clock_period;
           end if;
 
@@ -427,8 +432,8 @@ begin
       -- Reset the transaction info for waveview
       transaction_info      := C_TRANSACTION_INFO_DEFAULT;
 
-      -- Set DTT back to default values
-      restore_global_dtt(dtt_transaction_info, v_cmd);
+      -- Set VVC Transaction Info back to default values
+      reset_vvc_transaction_info(vvc_transaction_info, v_cmd);
     end loop;
   end process;
   --===============================================================================================
