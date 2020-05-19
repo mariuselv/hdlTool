@@ -14,7 +14,6 @@ from vhd import VHD
 from finder import Finder
 
 
-
 class Collection:
 
 
@@ -123,6 +122,8 @@ class Collection:
 
             # Add vhdl object to list
             self.vhdl_obj_list.append(vhdl_object)
+
+            vhdl_object.get_generics(tokens)
 
         self._sort_compile_order(self.vhdl_obj_list)
 

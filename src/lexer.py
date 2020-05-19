@@ -10,28 +10,7 @@
 
 
 import re
-
-
-_keywords = ["abs", "file", "access", "for", "after", "function", "alias", "all", "generate", "and", "generic", "architecture", "guarded", "array", 
-            "assert", "if", "attribute", "impure", "in", "begin", "inertial", "block", "inout", "body", "is", "buffer", "bus", "label", "library",
-            "case", "linkage", "component", "literal", "configuration", "loop", "of", "on", "open", "or", "others", "out", "package", "port", "postponed", 
-            "procedure", "process", "pure", "range", "record", "register", "reject", "rem", "report", "return", "rol", "ror", "select", "severity", "shared",
-            "signal", "sla", "sll", "sra", "srl", "subtype", "then", "to", "transport", "type", "unaffected", "units", "until", "use", "variable", "wait",
-            "when", "while", "with", "xnor", "xor", "constant", "disconnect", "mod", "downto", "nand", "else", "new", "elsif", "next", "end", "nor", 
-            "entity", "not", "exit", "null", "context"]
-
-_commons = ["rising_edge", "falling_edge"]
-
-_comments = ["--"]
-
-_assignment = ["=>", "<=", ":="]
-
-_operator = ["=/*=-+"]
-
-_symbols = ["(", ")", "[", "]", ";", ",", ".", "\""]
-_string = ["\""]
-
-_new_line = ["\n"]
+import hdl_tool_pkg
 
 
 
@@ -40,8 +19,8 @@ class Lexer(object):
 
     def __init__(self, source_code):
         # File to tokenize
-        self.source_code = source_code
-
+        self.source_code = self._string_to_list(source_code)
+        #self._word_stripper(source_code)
 
     def _complete_string(self, str):
         is_complete = True
@@ -50,73 +29,100 @@ class Lexer(object):
                 is_complete = not(is_complete)
         return is_complete
 
+    def _string_to_list(self, source_code):
+        # Creating word list of source code
+        return re.findall(r'\S+|\n', source_code)
+        #return source_code
+
+
+    def _word_stripper(self, source_code):
+        ret = ""
+        # Creating word list of source code
+        source_code = re.findall(r'\S+|\n', self.source_code)
+
 
     def tokenize(self):
         # Container
         tokens = []
 
-        # Creating word list of source code
-        source_code = re.findall(r'\S+|\n', self.source_code)
+        source_code = self.source_code
 
         # Word index counter
         source_index = 0
 
         # Set to True when parsing inside a string
         in_string = False
+        # Set to True when parsing inside a comment
+        in_comment = False
+        # Indicate that we have reached the end of line
+        new_line_detected = False
 
         # Loop words in source code and generate tokens
         while source_index < len(source_code):
             word = source_code[source_index]
 
-            # Check for statement endings and remove from word if found. Will be added as a keyword after.
             statement_end = False
-            if word[len(word)-1] in _symbols:
-                word = word[:len(word)-1]
-                statement_end = True
 
-            # Detect if this is a code comment
-            if word[0:2] == "--":
-                while word[len(word)-1] != "\n":
-                    source_index += 1
-                    word += source_code[source_index]   
+            # New line detected: reset 
+            if '\n' == word:
+                tokens.append(["NEW_LINE", '\n'])
+                in_comment = False
+                in_string = False
+
+
+            # Check if this is the start of a comment line
+            if (word[0:2] == "--") and not(in_string) and not(in_comment):
+                tokens.append(["SYMBOL", word[0:2]])
+                in_comment = True
+
+                # Check if this is the end of the comment line
+                if word[len(word)-2] == '\n':
+                    in_comment = False
+                    tokens.append(["COMMENT", word[:len(word)-2]])
+                    tokens.append(["NEW_LINE", '\n'])
+                # Check if comment is right after comment identifier
+                elif len(word) > 2:
+                    tokens.append(["COMMENT", word[2:]])
+
+            # This is an active comment line
+            elif in_comment:
                 tokens.append(["COMMENT", word])
-
-            # Detect if this is a string
-            elif "\"" in word:
-                source_index += 1
-
-                # Complete string
-                if word.count("\"") == 2:
-                    tokens.append(["STRING", word])
-                    continue    
-                # Incomplete string
-                else:
-                    text_string = word
-                    # Keep on reading until string is complete
-                    for idx in range(source_index, len(source_code)-1):
-                        text_string += source_code[idx]
-                        if "\"" in source_code[idx]:
-                            source_index = idx + 1
-                            tokens.append(["STRING", text_string])
-                            continue
-    
+                if word[len(word)-1] == '\n':
+                    in_comment = False
+                    tokens.append(["NEW_LINE", '\n'])
 
 
-            else:
+            # Detect code strings
+            elif (word in hdl_tool_pkg.string) and not(in_string):
+                in_string = True
+                tokens.append(["SYMBOL", word])
+            elif (word in hdl_tool_pkg.string) and in_string:
+                in_string = False
+                tokens.append(["SYMBOL", word])
+            elif in_string:
+                tokens.append(["STRING", word])
+            # Need checks for strings of type: "foo", not only: "foo  and foo"
+            
 
-                if word.lower() in _keywords:
+            elif not(in_string) and not(in_comment):
+
+                if word[len(word)-1] == ";":
+                    statement_end = True
+                    word = word[:len(word)-1]
+
+                if word.lower() in hdl_tool_pkg.keywords:
                     tokens.append(["KEYWORD", word])
 
-                elif word.lower() in _commons:
+                elif word.lower() in hdl_tool_pkg.commons:
                     tokens.append(["COMMON_KEYWORD", word])
 
-                elif word in _assignment:
+                elif word in hdl_tool_pkg.assignment:
                     tokens.append(["ASSIGNMENT", word])
 
-                elif word in _operator:
+                elif word in hdl_tool_pkg.operator:
                     tokens.append(["OPERATOR", word])
 
-                elif word in _symbols:
+                elif word in hdl_tool_pkg.symbols:
                     tokens.append(["SYMBOL", word])
 
                 elif re.match('[0-9]', word): 
@@ -125,20 +131,22 @@ class Lexer(object):
                 elif re.match('[a-z]', word.lower()):
                     tokens.append(["IDENTIFIER", word])
 
-                elif word in _comments:
+                elif word in hdl_tool_pkg.comments:
                     tokens.append(["COMMENT", word])
 
-                elif word in _new_line:
+                elif word in hdl_tool_pkg.new_line:
                     tokens.append(["NEW_LINE", "\n"])
 
                 else:
-                    tokens.append(["UNKNOWN", word])
-
+                    if not('\n') in word:
+                        tokens.append(["UNKNOWN", word])
+               
                 if statement_end:
-                    tokens.append(["STATEMENT_END", ";"])
+                   tokens.append(["STATEMENT_END", ";"])
 
 
-                # Increment word index counter
-                source_index += 1
+            # Increment word index counter
+            source_index += 1
+
 
         return tokens

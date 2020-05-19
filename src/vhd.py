@@ -7,8 +7,9 @@
     (c) 2019 Marius Elvegård
 ========================================================
 """
-_dep_keywords = ["LIBRARY", "USE", "CONTEXT", "COMPONENT", "ENTITY"]
-_id_keywords = ["ENTITY", "PACKAGE", "CONTEXT"]
+
+from genericParser import GenericParser
+import hdl_tool_pkg
 
 
 class VHD:
@@ -22,10 +23,6 @@ class VHD:
         self.lib_dep        = []
         self.use_dep        = []
         self.context_dep    = []
-
-        #self.dependency_list = []
-        #self.obj_dependency  = []
-        #self.lib_dependency  = []
         
             
 
@@ -56,7 +53,7 @@ class VHD:
 
     def set_type(self, token):
         if type(token) is list:
-            if token[0][0].upper() in _id_keywords:
+            if token[0][0].upper() in hdl_tool_pkg.id_keywords:
                 self.type = token[0][0]
         else:
             self.type = token
@@ -67,7 +64,7 @@ class VHD:
 
     def set_name(self, token):
         if type(token) is list:
-            if token[0][0].upper() in _id_keywords:
+            if token[0][0].upper() in hdl_tool_pkg.id_keywords:
                 self.name = token[0][1]
         else:
             self.name = token
@@ -109,3 +106,9 @@ class VHD:
         return self.lib_dep
     def get_context_dep(self):
         return self.context_dep
+
+
+
+    def get_generics(self, tokens):
+        gp = GenericParser(tokens)
+        return gp.getGenericList()
