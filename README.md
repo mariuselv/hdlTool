@@ -1,10 +1,10 @@
 HDL_Tool is a program that will help running VHDL simulations:
 
 - [X] Automatic dependency detection
-- [ ] Compiling 
-- [ ] Configuring tests
-- [ ] Running simulations
-
+- [X] Compiling 
+- [X] Configuring tests
+- [X] Running simulations
+- [ ] Advanced testbench generics
 
 **NOTE** not all features are implemented yet
 
