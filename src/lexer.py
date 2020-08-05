@@ -1,10 +1,10 @@
 """
 ========================================================
     Filename: lexer.py
-    Author: Marius Elvegård
+    Author: Marius Elvegaard
     Description:
 
-    (c) 2019 Marius Elvegård
+    (c) 2019 Marius Elvegaard
 ========================================================
 """
 
@@ -22,10 +22,10 @@ class Lexer(object):
         self.source_code = self._string_to_list(source_code)
         #self._word_stripper(source_code)
 
-    def _complete_string(self, str):
+    def _complete_string(self, str, str_char='\"'):
         is_complete = True
         for c in str:
-            if c == "\"":
+            if c == str_char:
                 is_complete = not(is_complete)
         return is_complete
 
@@ -63,7 +63,7 @@ class Lexer(object):
 
             statement_end = False
 
-            # New line detected: reset 
+            # New line detected: reset
             if '\n' == word:
                 tokens.append(["NEW_LINE", '\n'])
                 in_comment = False
@@ -102,7 +102,7 @@ class Lexer(object):
             elif in_string:
                 tokens.append(["STRING", word])
             # Need checks for strings of type: "foo", not only: "foo  and foo"
-            
+
 
             elif not(in_string) and not(in_comment):
 
@@ -125,7 +125,7 @@ class Lexer(object):
                 elif word in hdl_tool_pkg.symbols:
                     tokens.append(["SYMBOL", word])
 
-                elif re.match('[0-9]', word): 
+                elif re.match('[0-9]', word):
                     tokens.append(["INTEGER", word])
 
                 elif re.match('[a-z]', word.lower()):
@@ -140,7 +140,7 @@ class Lexer(object):
                 else:
                     if not('\n') in word:
                         tokens.append(["UNKNOWN", word])
-               
+
                 if statement_end:
                    tokens.append(["STATEMENT_END", ";"])
 
