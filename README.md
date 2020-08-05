@@ -1,4 +1,4 @@
-HDL_Tool is a program that will help running VHDL simulations:
+HDLTool is a program that will help running VHDL simulations:
 
 - [X] Automatic dependency detection
 - [X] Compiling 
@@ -8,6 +8,7 @@ HDL_Tool is a program that will help running VHDL simulations:
 
 **NOTE** not all features are implemented yet
 
+**WARNING** this project is in development
 
 
 **Demo setup:**
@@ -15,7 +16,7 @@ HDL_Tool is a program that will help running VHDL simulations:
 sys.path.insert(0, 'src')
   
 import sys
-from hdl_tool import Hdl_tool as Ht
+from hdlTool import HdlTool as Ht
 
 def main():
 
@@ -84,7 +85,7 @@ if __name__ == "__main__":
 
 **Demo output:**
 ```console
-√ hdl_tool % py run.py 
+√ hdlTool % py run.py 
 
 ================================ bitvis_vip_uart ================================
 [1] File: demo/bitvis_vip_uart/uart_bfm_pkg.vhd (PACKAGE: uart_bfm_pkg)

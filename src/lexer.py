@@ -10,7 +10,7 @@
 
 
 import re
-import hdl_tool_pkg
+import hdlTool_pkg
 
 
 
@@ -93,10 +93,10 @@ class Lexer(object):
 
 
             # Detect code strings
-            elif (word in hdl_tool_pkg.string) and not(in_string):
+            elif (word in hdlTool_pkg.string) and not(in_string):
                 in_string = True
                 tokens.append(["SYMBOL", word])
-            elif (word in hdl_tool_pkg.string) and in_string:
+            elif (word in hdlTool_pkg.string) and in_string:
                 in_string = False
                 tokens.append(["SYMBOL", word])
             elif in_string:
@@ -110,19 +110,19 @@ class Lexer(object):
                     statement_end = True
                     word = word[:len(word)-1]
 
-                if word.lower() in hdl_tool_pkg.keywords:
+                if word.lower() in hdlTool_pkg.keywords:
                     tokens.append(["KEYWORD", word])
 
-                elif word.lower() in hdl_tool_pkg.commons:
+                elif word.lower() in hdlTool_pkg.commons:
                     tokens.append(["COMMON_KEYWORD", word])
 
-                elif word in hdl_tool_pkg.assignment:
+                elif word in hdlTool_pkg.assignment:
                     tokens.append(["ASSIGNMENT", word])
 
-                elif word in hdl_tool_pkg.operator:
+                elif word in hdlTool_pkg.operator:
                     tokens.append(["OPERATOR", word])
 
-                elif word in hdl_tool_pkg.symbols:
+                elif word in hdlTool_pkg.symbols:
                     tokens.append(["SYMBOL", word])
 
                 elif re.match('[0-9]', word):
@@ -131,10 +131,10 @@ class Lexer(object):
                 elif re.match('[a-z]', word.lower()):
                     tokens.append(["IDENTIFIER", word])
 
-                elif word in hdl_tool_pkg.comments:
+                elif word in hdlTool_pkg.comments:
                     tokens.append(["COMMENT", word])
 
-                elif word in hdl_tool_pkg.new_line:
+                elif word in hdlTool_pkg.new_line:
                     tokens.append(["NEW_LINE", "\n"])
 
                 else:

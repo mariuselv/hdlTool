@@ -1,6 +1,6 @@
 """
 ========================================================
-    Filename: hdl_tool.py
+    Filename: hdlTool.py
     Author: Marius Elvegård
     Description:
 
@@ -11,7 +11,7 @@
 import sys
 sys.path.insert(0, 'src')
 
-from hdl_tool import Hdl_tool as Ht
+from hdlTool import hdlTool as Ht
 
 def main():
 

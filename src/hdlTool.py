@@ -1,6 +1,6 @@
 """
 ========================================================
-    Filename: hdl_tool.py
+    Filename: hdlTool.py
     Author: Marius Elvegård
     Description:
 
@@ -17,7 +17,7 @@ from compiler import Compiler
 from testbench import Testbench
 
 
-class Hdl_tool():
+class hdlTool():
 
     def __init__(self):
         self.collection_list = []

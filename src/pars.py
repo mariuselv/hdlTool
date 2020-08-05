@@ -8,7 +8,7 @@
 ========================================================
 """
 
-import hdl_tool_pkg
+import hdlTool_pkg
 
 
 class Parser():
@@ -44,7 +44,7 @@ class Parser():
             if token_keyword == "KEYWORD" and not(is_string) and not(is_comment):
 
                 # Check if token is a dependency keyword and save it
-                if token_word in hdl_tool_pkg.dep_keywords:
+                if token_word in hdlTool_pkg.dep_keywords:
                     tokens_item = self.tokens[token_counter+1][1]
 
                     # Catch any component instantiations in architecture
@@ -56,7 +56,7 @@ class Parser():
                     token_counter += 1
 
                 # Catch any in-code clauses, e.g. "alias X is my_library.my_pkg.Y"
-                elif token_word in hdl_tool_pkg.inlines:
+                elif token_word in hdlTool_pkg.inlines:
                     next_token_keyword = self.tokens[token_counter + 1][0]
                     next_token_word    = self.tokens[token_counter + 1][1]
                     if next_token_keyword.upper() == "IDENTIFIER":
@@ -89,9 +89,9 @@ class Parser():
             token_word      = self.tokens[token_counter][1].upper()
 
             # Find VHDL keywords
-            if (token_keyword == "KEYWORD") and (token_word in hdl_tool_pkg.id_keywords):
+            if (token_keyword == "KEYWORD") and (token_word in hdlTool_pkg.id_keywords):
                 
-                if token_word in hdl_tool_pkg.id_keywords:
+                if token_word in hdlTool_pkg.id_keywords:
 
                     # ENTITY ?
                     if token_word == "ENTITY":

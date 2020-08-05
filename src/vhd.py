@@ -9,7 +9,7 @@
 """
 
 from genericParser import GenericParser
-import hdl_tool_pkg
+import hdlTool_pkg
 
 
 class VHD:
@@ -53,7 +53,7 @@ class VHD:
 
     def set_type(self, token):
         if type(token) is list:
-            if token[0][0].upper() in hdl_tool_pkg.id_keywords:
+            if token[0][0].upper() in hdlTool_pkg.id_keywords:
                 self.type = token[0][0]
         else:
             self.type = token
@@ -64,7 +64,7 @@ class VHD:
 
     def set_name(self, token):
         if type(token) is list:
-            if token[0][0].upper() in hdl_tool_pkg.id_keywords:
+            if token[0][0].upper() in hdlTool_pkg.id_keywords:
                 self.name = token[0][1]
         else:
             self.name = token
