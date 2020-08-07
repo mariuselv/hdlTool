@@ -10,7 +10,6 @@
 
 import sys, inspect, os
 
-from finder import Finder
 from collection import Collection
 from test_suite import Test_suite
 from compiler import Compiler
