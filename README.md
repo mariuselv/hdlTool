@@ -85,7 +85,7 @@ if __name__ == "__main__":
 
 **Demo output:**
 ```console
-√ hdlTool % py run.py 
+√ hdlTool % py ht.py 
 
 ================================ bitvis_vip_uart ================================
 [1] File: demo/bitvis_vip_uart/uart_bfm_pkg.vhd (PACKAGE: uart_bfm_pkg)
