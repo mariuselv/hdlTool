@@ -86,9 +86,10 @@ class Collection:
                             sorted_list = self._swap(sorted_list, sort_idx, check_idx)
 
         self.vhdl_obj_list = sorted_list
+        return self.vhdl_obj_list
 
 
-    def organize_collection(self):
+    def organize_collection(self) -> list :
         """
         With all files in collection do:
         1. Create a vhdl_object() object
@@ -136,7 +137,8 @@ class Collection:
             vhdl_object.get_generics(tokens)
 
         # Organize VHDL objects by internal dependeny
-        self._sort_compile_order(self.vhdl_obj_list)
+        return self._sort_compile_order(self.vhdl_obj_list)
+         
 
 
     def get_compile_order(self) -> list :
