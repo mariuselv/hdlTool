@@ -15,12 +15,12 @@ import hdlTool_pkg
 
 
 class Lexer(object):
-
+    tokens = []
 
     def __init__(self, source_code):
-        # File to tokenize
-        self.source_code = self._string_to_list(source_code)
-        #self._word_stripper(source_code)
+        # String
+        source_code = self._string_to_list(source_code)
+        self.tokenize(source_code, self.tokens)
 
     def _complete_string(self, str, str_char='\"'):
         is_complete = True
@@ -30,23 +30,11 @@ class Lexer(object):
         return is_complete
 
     def _string_to_list(self, source_code):
-        # Creating word list of source code
+        """ Creating word list of source code """
         return re.findall(r'\S+|\n', source_code)
-        #return source_code
 
-
-    def _word_stripper(self, source_code):
-        ret = ""
-        # Creating word list of source code
-        source_code = re.findall(r'\S+|\n', self.source_code)
-
-
-    def tokenize(self):
-        # Container
-        tokens = []
-
-        source_code = self.source_code
-
+    def tokenize(cls, source_code, tokens) -> list :
+        """ Create tokens list """
         # Word index counter
         source_index = 0
 
@@ -54,8 +42,6 @@ class Lexer(object):
         in_string = False
         # Set to True when parsing inside a comment
         in_comment = False
-        # Indicate that we have reached the end of line
-        new_line_detected = False
 
         # Loop words in source code and generate tokens
         while source_index < len(source_code):
@@ -147,6 +133,8 @@ class Lexer(object):
 
             # Increment word index counter
             source_index += 1
-
-
         return tokens
+
+
+    def get_tokens(self) -> list :
+        return self.tokens

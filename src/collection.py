@@ -112,9 +112,9 @@ class Collection:
             with open(file_item, 'r') as file:
                 content = file.read()
 
-            # Lexer
-            lex = Lexer(content)
-            tokens = lex.tokenize()
+            # Get tokens from Lexer
+            lexer = Lexer(content)
+            tokens = lexer.get_tokens()
 
             # Parser
             parser      = Parser(tokens)
