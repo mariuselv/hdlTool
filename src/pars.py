@@ -16,10 +16,8 @@ class Parser():
     def __init__(self, tokens):
         self.tokens = tokens
 
-    def get_dependency(self):
-        """
-        Create a dependency list from the tokens
-        """
+    def get_dependency(self) -> list :
+        """  Create a dependency list from the tokens """
         dependency_list = []
         token_counter = 0
         is_comment = False
@@ -72,50 +70,37 @@ class Parser():
                             token_counter += 1
 
             token_counter += 1
-
         return dependency_list
 
 
+    def get_type(self) -> list :
+        """ Get type of VHD object, e.g. context file, entity or package """
+        type_list = ["OTHER", "OTHER"]
 
-    def get_type(self):
-        """ 
-        Get type of VHD object, e.g. context file, entity or package
-        """
-        type_list = []
-        token_counter = 0
-
-        while (token_counter < len(self.tokens)-1):
-            token_keyword   = self.tokens[token_counter][0]
-            token_word      = self.tokens[token_counter][1].upper()
+        for token_counter, token in enumerate(self.tokens):
+            token_keyword   = token[0]
+            token_word      = token[1].upper()
+            next_token      = None
+            if token_counter < len(self.tokens): 
+                next_token = self.tokens[token_counter+1]
 
             # Find VHDL keywords
             if (token_keyword == "KEYWORD") and (token_word in hdlTool_pkg.id_keywords):
                 
                 if token_word in hdlTool_pkg.id_keywords:
-
-                    # ENTITY ?
                     if token_word == "ENTITY":
-                        type_list = [[token_word,  self.tokens[token_counter+1][1]]]
-                        # Done
+                        type_list = [token_word,  next_token[1]]
                         break
-                    
-                    # PACKAGE ?
                     elif token_word == "PACKAGE":
-                        type_list = [[token_word,  self.tokens[token_counter+1][1]]]
-                        # Done
+                        type_list = [token_word,  next_token[1]]
                         break
-                        
-                    # CONTEXT ?
                     elif token_word == "CONTEXT":
                         # Check is next token is "IS"
                         if self.tokens[token_counter+2][0] == "KEYWORD":
                             if self.tokens[token_counter+2][1].upper() == "IS":
-                                type_list = [[token_word, self.tokens[token_counter+1][1]]]
+                                type_list = [token_word, next_token[1]]
                                 break
 
             token_counter += 1
-
-        if not( type_list ):
-            type_list.append(["OTHER", "OTHER"])
 
         return type_list
