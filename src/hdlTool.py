@@ -50,7 +50,7 @@ class hdlTool():
         collection_list_copy = self.collection_list.copy()
         self.organized_list = self.collection_list.copy()
 
-        for run in range(1, len(self.collection_list)):
+        for run_idx in range(0, len(self.collection_list)):
             for check_collection in collection_list_copy:
                 for dep_collection in self.organized_list:
                     if dep_collection.get_library() in check_collection.get_external_dependency():

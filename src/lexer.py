@@ -20,7 +20,7 @@ class Lexer(object):
     def __init__(self, source_code):
         # String
         source_code = self._string_to_list(source_code)
-        self.tokenize(source_code, self.tokens)
+        self.tokens = self.tokenize(source_code)
 
     def _complete_string(self, str, str_char='\"'):
         is_complete = True
@@ -33,9 +33,10 @@ class Lexer(object):
         """ Creating word list of source code """
         return re.findall(r'\S+|\n', source_code)
 
-    def tokenize(cls, source_code, tokens) -> list :
+    def tokenize(cls, source_code) -> list :
         """ Create tokens list from source code string """
-
+        tokens = []
+        
         # Word index counter
         source_index = 0
 
@@ -144,6 +145,7 @@ class Lexer(object):
 
             # Increment word index counter
             source_index += 1
+
         return tokens
 
 

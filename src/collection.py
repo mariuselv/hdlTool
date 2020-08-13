@@ -120,6 +120,7 @@ class Collection:
             parser      = Parser(tokens)
             # Get the vhdl objects dependencies
             dep_list    = parser.get_dependency()
+
             # Get the type of vhdl object
             vhdl_type    = parser.get_type()
 
@@ -134,7 +135,7 @@ class Collection:
             # Add vhdl object to list
             self.vhdl_obj_list.append(vhdl_object)
 
-            vhdl_object.get_generics(tokens)
+            #vhdl_object.get_generics(tokens)
 
         # Organize VHDL objects by internal dependeny
         return self._sort_compile_order(self.vhdl_obj_list)

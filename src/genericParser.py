@@ -26,7 +26,7 @@ class GenericParser:
         generics_list  = []
 
         for idx, token in enumerate(tokens):
-            tokenUpper = [t.upper() for t in token]
+            tokenUpper = [t.upper() for t in token[0:1]]
 
 
             # List of generics constants will follow

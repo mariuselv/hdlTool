@@ -75,8 +75,6 @@ class Parser():
 
     def get_type(self) -> list :
         """ Get type of VHD object, e.g. context file, entity or package """
-        type_list = ["OTHER", "OTHER"]
-
         for token_counter, token in enumerate(self.tokens):
             token_keyword   = token[0]
             token_word      = token[1].upper()
@@ -86,21 +84,13 @@ class Parser():
 
             # Find VHDL keywords
             if (token_keyword == "KEYWORD") and (token_word in hdlTool_pkg.id_keywords):
-                
-                if token_word in hdlTool_pkg.id_keywords:
-                    if token_word == "ENTITY":
-                        type_list = [token_word,  next_token[1]]
-                        break
-                    elif token_word == "PACKAGE":
-                        type_list = [token_word,  next_token[1]]
-                        break
-                    elif token_word == "CONTEXT":
-                        # Check is next token is "IS"
-                        if self.tokens[token_counter+2][0] == "KEYWORD":
-                            if self.tokens[token_counter+2][1].upper() == "IS":
-                                type_list = [token_word, next_token[1]]
-                                break
-
-            token_counter += 1
-
-        return type_list
+                if token_word == "ENTITY":
+                    return [token_word,  next_token[1]]
+                elif token_word == "PACKAGE":
+                    return [token_word,  next_token[1]]
+                elif token_word == "CONTEXT":
+                    # Check is next token is "IS"
+                    if self.tokens[token_counter+2][0] == "KEYWORD":
+                        if self.tokens[token_counter+2][1].upper() == "IS":
+                            return[token_word, next_token[1]]
+        return ["OTHER", "OTHER"]

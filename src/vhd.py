@@ -53,8 +53,8 @@ class VHD:
 
     def set_type(self, token):
         if type(token) is list:
-            if token[0][0].upper() in hdlTool_pkg.id_keywords:
-                self.type = token[0][0]
+            if token[0].upper() in hdlTool_pkg.id_keywords:
+                self.type = token[0]
         else:
             self.type = token
 
@@ -64,8 +64,8 @@ class VHD:
 
     def set_name(self, token):
         if type(token) is list:
-            if token[0][0].upper() in hdlTool_pkg.id_keywords:
-                self.name = token[0][1]
+            if token[0].upper() in hdlTool_pkg.id_keywords:
+                self.name = token[1]
         else:
             self.name = token
 
