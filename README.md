@@ -13,9 +13,9 @@ HDLTool is a program that will help running VHDL simulations:
 
 **Demo setup:**
 ```python
+import sys
 sys.path.insert(0, 'src')
   
-import sys
 from hdlTool import HdlTool as Ht
 
 def main():
