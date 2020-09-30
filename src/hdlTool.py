@@ -30,9 +30,9 @@ class hdlTool():
 
     def _parse_arguments(self):
         ap = argparse.ArgumentParser(description="hdlTool command line arguments")
-        ap.add_argument('-lt', help="list testcases")
-        ap.add_argument('-nc', help='no compilation')
-        ap.add_argument('-lc', help='list compile order')
+        ap.add_argument('-lt', '--list_tc', help="list testcases", action='store_true')
+        ap.add_argument('-nc', '--no_compile', help='no compilation', action='store_true')
+        ap.add_argument('-lc', '--list_compile', help='list compile order', action='store_true')
         ap.add_argument('-v', '--verbose', help="terminal output")
         return ap.parse_args()
 
