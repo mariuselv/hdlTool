@@ -14,16 +14,27 @@ from collection import Collection
 from test_suite import Test_suite
 from compiler import Compiler
 from testbench import Testbench
+import argparse
 
 
 class hdlTool():
 
     def __init__(self):
-        self.collection_list = []
-        self.organized_list  = []
-        self.testbench_list  = []
-        self.project_path = self._get_caller_filepath()
-        self.compiler = Compiler(self.project_path)
+        self.collection_list    = []
+        self.organized_list     = []
+        self.testbench_list     = []
+        self.project_path       = self._get_caller_filepath()
+        self.compiler           = Compiler(self.project_path)
+        self.args               = self._parse_arguments()
+
+
+    def _parse_arguments(self):
+        ap = argparse.ArgumentParser(description="hdlTool command line arguments")
+        ap.add_argument('-lt', help="list testcases")
+        ap.add_argument('-nc', help='no compilation')
+        ap.add_argument('-lc', help='list compile order')
+        ap.add_argument('-v', '--verbose', help="terminal output")
+        return ap.parse_args()
 
 
     def _get_caller_filepath(self):
